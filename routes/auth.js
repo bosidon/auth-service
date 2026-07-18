@@ -96,6 +96,50 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ===== 修改密码（已登录状态） =====
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: '请填写旧密码和新密码' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, error: '新密码至少6位' });
+    }
+
+    // 查当前用户密码哈希
+    const user = await db.get('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
+    if (!user) {
+      return res.status(404).json({ success: false, error: '用户不存在' });
+    }
+
+    // 验证旧密码
+    if (!bcrypt.compareSync(oldPassword, user.password_hash)) {
+      return res.status(403).json({ success: false, error: '旧密码错误' });
+    }
+
+    // 设新密码
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(newPassword, salt);
+    await db.run(
+      'UPDATE users SET password_hash = ?, updated_at = datetime("now") WHERE id = ?',
+      [hash, req.user.id]
+    );
+
+    // 记录日志
+    await db.run(
+      'INSERT INTO user_logs (user_id, action, detail, ip, user_agent) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'change_password', JSON.stringify({}), req.ip, req.headers['user-agent'] || '']
+    );
+
+    res.json({ success: true, data: { message: '密码修改成功' } });
+  } catch (error) {
+    console.error('修改密码失败:', error);
+    res.status(500).json({ success: false, error: '服务器错误' });
+  }
+});
+
 // ===== 退出登录 =====
 router.post('/logout', authenticateToken, async (req, res) => {
   try {

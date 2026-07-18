@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS usage (
     UNIQUE(user_id, service)
 );
 
+-- 邮箱验证码（用于验证码登录）
+CREATE TABLE IF NOT EXISTS email_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR(100) NOT NULL,
+    code VARCHAR(6) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_email_codes_email ON email_codes(email);
+
 -- 系统设置
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,

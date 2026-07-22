@@ -46,6 +46,7 @@ app.use(async (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get("/reset-password", (req, res) => res.sendFile(path.join(__dirname, "public", "reset-password.html")));
+app.get("/account", (req, res) => res.sendFile(path.join(__dirname, "public", "account.html")));
 
 initDatabase();
 

@@ -97,6 +97,50 @@ router.post('/login', async (req, res) => {
 });
 
 // ===== 修改密码（已登录状态） =====
+
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+var upDir = path.join(__dirname, '..', 'public', 'uploads');
+if (!fs.existsSync(upDir)) fs.mkdirSync(upDir, { recursive: true });
+var upStorage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, upDir); },
+  filename: function (req, file, cb) {
+    var ext = path.extname(file.originalname) || '.jpg';
+    cb(null, 'avatar_' + req.user.id + '_' + Date.now() + ext);
+  }
+});
+var upLoader = multer({ storage: upStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+router.post('/upload-avatar', authenticateToken, upLoader.single('avatar'), async (req, res) => {
+  if (!req.file) return res.json({ success: false, error: '请选择文件' });
+  var url = '/uploads/' + req.file.filename;
+  await db.run('UPDATE users SET avatar_url = ?, updated_at = datetime("now") WHERE id = ?', [url, req.user.id]);
+  res.json({ success: true, data: { url: url } });
+});
+// 发送手机验证码（演示模式）
+router.post('/send-phone-code', authenticateToken, async (req, res) => {
+  const { phone } = req.body;
+  if (!phone || phone.length < 11) return res.json({ success: false, error: '请输入正确手机号' });
+  // TODO: 接入真实SMS通道
+  res.json({ success: true, message: '验证码已发送（演示模式）' });
+});
+
+// 绑定手机号
+router.post('/bind-phone', authenticateToken, async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.json({ success: false, error: '请输入手机号' });
+    const exist = await db.get('SELECT id FROM users WHERE phone = ?', [phone]);
+    if (exist) return res.json({ success: false, error: '该手机号已被绑定' });
+    await db.run('UPDATE users SET phone = ?, updated_at = datetime("now") WHERE id = ?', [phone, req.user.id]);
+    res.json({ success: true, data: { phone } });
+  } catch (e) {
+    res.json({ success: false, error: '绑定失败' });
+  }
+});
+
 router.post('/change-password', authenticateToken, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;

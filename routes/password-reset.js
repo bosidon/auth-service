@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { authenticateToken } = require('../middleware/auth');
 const db = require('../config/database');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -47,6 +48,17 @@ router.post('/request', async (req, res) => {
 });
 
 // 验证 token
+// 为已登录用户发送密码重置邮件
+router.post('/send-reset', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user.email;
+    await sendResetEmail(email);
+    res.json({ success: true, message: '重置链接已发送到您的邮箱' });
+  } catch (e) {
+    res.json({ success: false, error: '发送失败，请稍后重试' });
+  }
+});
+
 router.post('/verify', async (req, res) => {
   try {
     var token = req.body.token;

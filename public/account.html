@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>账号设置 - 仙宝心灵成长</title>
+<title>账号设置 - 仙宝</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC','Hiragino Sans GB',sans-serif;font-size:1rem;background:#0d0d12;color:#e0e0e0;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',sans-serif;font-size:1rem;background:#0d0d12;color:#e0e0e0;min-height:100vh}
 .container{max-width:560px;margin:0 auto;padding:24px 20px 60px}
 .back{display:inline-flex;align-items:center;gap:6px;color:#94a3b8;font-size:0.88rem;text-decoration:none;margin-bottom:20px}
 .back:hover{color:#e0e0e0}
@@ -15,24 +15,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC','
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:0.88rem}
 .info-row:last-child{border:none}
 .info-label{color:#94a3b8}
-.info-value{color:#e0e0e0}
-.avatar-row{display:flex;align-items:center;gap:16px}
-.avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0}
+.info-value{color:#e0e0e0;text-align:right;max-width:60%;word-break:break-all}
+.avatar-wrap{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.avatar-input{flex:1}
-.avatar-input input{width:100%;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none}
-.avatar-input input:focus{border-color:#7c3aed}
-label{display:block;font-size:0.88rem;color:#94a3b8;margin-bottom:4px}
+.avatar input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.avatar-url-row{display:flex;gap:8px;margin-top:8px}
+.avatar-url-row input{flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.82rem;outline:none}
+.avatar-url-row input:focus{border-color:#7c3aed}
+label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
 .input{width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none;margin-bottom:12px;box-sizing:border-box}
 .input:focus{border-color:#7c3aed}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;border:none;font-size:0.88rem;font-weight:600;cursor:pointer;transition:.2s;text-decoration:none}
+.row{display:flex;gap:8px;margin-bottom:12px}
+.row .input{flex:1;margin-bottom:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 20px;border-radius:8px;border:none;font-size:0.88rem;font-weight:600;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap}
 .btn-primary{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff}
 .btn-primary:hover{opacity:.9}
 .btn-outline{background:transparent;border:1px solid #1e1e2a;color:#94a3b8}
 .btn-outline:hover{border-color:#7c3aed;color:#e0e0e0}
 .btn-sm{padding:6px 14px;font-size:0.75rem}
 .btn-full{width:100%;justify-content:center}
-.binding-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.binding-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:0.88rem}
 .binding-item:last-child{border:none}
 .binding-left{display:flex;align-items:center;gap:10px}
 .binding-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.88rem}
@@ -46,7 +49,8 @@ label{display:block;font-size:0.88rem;color:#94a3b8;margin-bottom:4px}
 .vip-plan.free{color:#6b7280}
 .vip-plan.vip{color:#f59e0b}
 .vip-expires{font-size:0.75rem;color:#6b7280;margin-top:2px}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:0.88rem;z-index:9999;display:none;animation:fadeDown .3s ease}
+.desc{font-size:0.75rem;color:#6b7280;margin-top:-8px;margin-bottom:12px}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:0.88rem;z-index:9999;display:none;animation:fadeDown .3s ease;text-align:center}
 .toast.ok{background:#065f46;color:#6ee7b7}
 .toast.err{background:#7f1d1d;color:#fca5a5}
 @keyframes fadeDown{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
@@ -56,25 +60,72 @@ label{display:block;font-size:0.88rem;color:#94a3b8;margin-bottom:4px}
 <div class="container">
   <a href="https://xianbao.online" class="back">← 返回仙宝</a>
 
-  <!-- 用户信息 -->
+  <!-- 账户信息 -->
   <div class="card">
     <div class="card-title">👤 账户信息</div>
-    <div class="avatar-row" style="margin-bottom:16px">
-      <div class="avatar" id="avatarDisplay">?</div>
-      <div class="avatar-input">
-        <label>头像链接</label>
-        <input type="text" id="avatarUrl" class="input" placeholder="输入头像图片URL" style="margin-bottom:0">
+    <div class="info-row"><span class="info-label">邮箱</span><span class="info-value" id="infoEmail">-</span></div>
+    <div class="info-row"><span class="info-label">用户名</span><span class="info-value" id="infoUser">-</span></div>
+    <div class="info-row"><span class="info-label">昵称</span><span class="info-value" id="infoNick">-</span></div>
+    <div class="info-row"><span class="info-label">手机号</span><span class="info-value" id="infoPhone">未绑定</span></div>
+    <div class="info-row"><span class="info-label">注册时间</span><span class="info-value" id="infoCreated">-</span></div>
+  </div>
+
+  <!-- 头像 -->
+  <div class="card">
+    <div class="card-title">🖼️ 头像</div>
+    <div class="avatar-wrap">
+      <div class="avatar" id="avatarDisplay">
+        <input type="file" accept="image/*" id="avatarFile" onchange="uploadAvatar()">
+      </div>
+      <div style="font-size:0.82rem;color:#6b7280">点击头像选择图片上传</div>
+    </div>
+    <div class="avatar-url-row">
+      <input type="text" id="avatarUrl" placeholder="或输入头像链接">
+      <button class="btn btn-outline btn-sm" onclick="saveAvatarUrl()">保存</button>
+    </div>
+  </div>
+
+  <!-- 昵称 -->
+  <div class="card">
+    <div class="card-title">✏️ 昵称</div>
+    <div class="row">
+      <input type="text" id="nickname" class="input" placeholder="设置昵称">
+      <button class="btn btn-primary btn-sm" onclick="saveNickname()">保存</button>
+    </div>
+    <div class="desc">昵称将显示在各大站点</div>
+  </div>
+
+  <!-- 用户名 -->
+  <div class="card">
+    <div class="card-title">🔤 用户名</div>
+    <div class="row">
+      <input type="text" id="username" class="input" placeholder="字母数字下划线">
+      <button class="btn btn-primary btn-sm" onclick="saveUsername()">保存</button>
+    </div>
+    <div class="desc">用户名用于登录，仅限字母数字下划线</div>
+  </div>
+
+  <!-- 手机号 -->
+  <div class="card">
+    <div class="card-title">📱 绑定手机号</div>
+    <div class="info-row" id="phoneStatusRow" style="display:none">
+      <span class="info-label">当前</span>
+      <span class="info-value" id="infoPhone2">-</span>
+    </div>
+    <div id="phoneBindForm">
+      <div class="row">
+        <input type="text" id="bindPhone" class="input" placeholder="手机号">
+        <button class="btn btn-outline btn-sm" id="sendPhoneBtn" onclick="sendPhoneCode()">获取验证码</button>
+      </div>
+      <div class="row">
+        <input type="text" id="phoneCode" class="input" placeholder="验证码">
+        <button class="btn btn-primary btn-sm" onclick="bindPhone()">绑定</button>
       </div>
     </div>
-    <div class="info-row"><span class="info-label">邮箱</span><span class="info-value" id="infoEmail">-</span></div>
-    <div class="info-row"><span class="info-label">昵称</span><span class="info-value" id="infoNick">-</span></div>
-    <div class="info-row"><span class="info-label">用户名</span><span class="info-value" id="infoUser">-</span></div>
-    <div class="info-row"><span class="info-label">注册时间</span><span class="info-value" id="infoCreated">-</span></div>
-    <div style="margin-top:12px">
-      <label>修改昵称</label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="nickname" class="input" placeholder="新昵称" style="flex:1;margin-bottom:0">
-        <button class="btn btn-primary btn-sm" onclick="saveProfile()">保存</button>
+    <div id="phoneBound" style="display:none">
+      <div class="row">
+        <input type="text" id="newPhone" class="input" placeholder="新手机号">
+        <button class="btn btn-outline btn-sm" onclick="showToast('暂不支持解绑','err')">解绑</button>
       </div>
     </div>
   </div>
@@ -82,32 +133,20 @@ label{display:block;font-size:0.88rem;color:#94a3b8;margin-bottom:4px}
   <!-- 密码 -->
   <div class="card">
     <div class="card-title">🔒 登录密码</div>
-    <label>当前密码</label>
-    <input type="password" id="oldPwd" class="input" placeholder="输入当前密码">
-    <label>新密码</label>
-    <input type="password" id="newPwd" class="input" placeholder="至少6位">
-    <label>确认密码</label>
-    <input type="password" id="confirmPwd" class="input" placeholder="再输一次">
-    <button class="btn btn-primary btn-full" onclick="changePwd()">修改密码</button>
-    <div style="text-align:center;margin-top:12px">
-      <a href="https://auth.xianbao.online/reset-password" style="color:#64748b;font-size:0.75rem;text-decoration:none">忘记密码或未设置密码？点此通过邮箱重置</a>
-    </div>
+    <p style="font-size:0.82rem;color:#6b7280;margin-bottom:12px">重置链接将发送到你的注册邮箱</p>
+    <button class="btn btn-outline btn-full" id="sendResetBtn" onclick="sendReset()">发送重置链接到邮箱</button>
   </div>
 
-  <!-- 绑定 -->
+  <!-- 社交绑定 -->
   <div class="card">
-    <div class="card-title">🔗 账号绑定</div>
+    <div class="card-title">🔗 社交绑定</div>
     <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon qq">Q</div><div><div class="binding-name">QQ</div><div class="binding-status" id="qqStatus">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="bindQQ()">绑定</button>
+      <div class="binding-left"><div class="binding-icon qq">Q</div><div><div class="binding-name">QQ</div><div class="binding-status">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" onclick="showToast('QQ登录开发中','err')">绑定</button>
     </div>
     <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wechatStatus">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="bindWechat()">绑定</button>
-    </div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon phone">📞</div><div><div class="binding-name">手机号</div><div class="binding-status" id="phoneStatus">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="bindPhone()">绑定</button>
+      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" onclick="showToast('微信登录开发中','err')">绑定</button>
     </div>
   </div>
 
@@ -129,92 +168,123 @@ label{display:block;font-size:0.88rem;color:#94a3b8;margin-bottom:4px}
 <script src="https://xianbao.online/assets/xianbao/auth-widget.js"></script>
 <script>
 var AUTH = 'https://auth.xianbao.online';
+function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok');e.style.display='block';setTimeout(function(){e.style.display='none'},3000)}
+function api(p,d){return fetch(AUTH+'/api'+p,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:d?JSON.stringify(d):void 0}).then(function(r){return r.json()})}
+function apiGet(p){return fetch(AUTH+'/api'+p,{credentials:'include'}).then(function(r){return r.json()})}
 
-function showToast(msg, type){
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast ' + type; t.style.display = 'block';
-  setTimeout(function(){t.style.display='none'}, 3000);
-}
-
-function api(path, data){
-  return fetch(AUTH + '/api' + path, {
-    method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
-    body: JSON.stringify(data)
-  }).then(function(r){return r.json()});
-}
-
-function apiGet(path){
-  return fetch(AUTH + '/api' + path, {credentials: 'include'}).then(function(r){return r.json()});
-}
-
-// 验证登录状态
 XianbaoAuth.checkAuth().then(function(){
-  if(XianbaoAuth.isLoggedIn()){
-    initPage();
-  } else {
-    window.location.href='https://xianbao.online';
-  }
+  if(!XianbaoAuth.isLoggedIn()){window.location.href='https://xianbao.online';return}
+  loadData();
 });
 
-function initPage(){
+function loadData(){
   apiGet('/auth/me').then(function(d){
-    if(!d.success){ showToast('请重新登录','err'); return; }
-    var u = d.data;
-    document.getElementById('infoEmail').textContent = u.email || '-';
-    document.getElementById('infoNick').textContent = u.nickname || '-';
-    document.getElementById('infoUser').textContent = u.username || '-';
-    document.getElementById('infoCreated').textContent = u.created_at ? u.created_at.slice(0,10) : '-';
-    document.getElementById('nickname').value = u.nickname || '';
-    document.getElementById('avatarUrl').value = u.avatar_url || '';
-    updateAvatar(u.avatar_url, u.nickname || u.username || '?');
-    if(u.plan && u.plan !== 'free'){
-      document.getElementById('vipPlan').textContent = 'VIP会员';
-      document.getElementById('vipPlan').className = 'vip-plan vip';
-      if(u.expires_at) document.getElementById('vipExpires').textContent = '到期: ' + u.expires_at.slice(0,10);
+    if(!d.success)return;
+    var u=d.data;
+    document.getElementById('infoEmail').textContent=u.email||'-';
+    document.getElementById('infoUser').textContent=u.username||'-';
+    document.getElementById('infoNick').textContent=u.nickname||'-';
+    document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
+    document.getElementById('nickname').value=u.nickname||'';
+    document.getElementById('username').value=u.username||'';
+    document.getElementById('avatarUrl').value=u.avatar_url||'';
+    updateAvatar(u.avatar_url,u.nickname||u.username||'?');
+    if(u.phone){
+      document.getElementById('infoPhone').textContent=u.phone;
+      document.getElementById('infoPhone').parentElement.style.display='flex';
+      document.getElementById('phoneStatusRow').style.display='flex';
+      document.getElementById('infoPhone2').textContent=u.phone;
+      document.getElementById('phoneBindForm').style.display='none';
+      document.getElementById('phoneBound').style.display='block';
+    }
+    if(u.plan&&u.plan!=='free'){
+      document.getElementById('vipPlan').textContent='VIP会员';
+      document.getElementById('vipPlan').className='vip-plan vip';
+      if(u.expires_at)document.getElementById('vipExpires').textContent='到期: '+u.expires_at.slice(0,10);
     }
   });
 }
 
-function updateAvatar(url, name){
-  var el = document.getElementById('avatarDisplay');
-  if(url){ el.innerHTML = '<img src="'+url+'" alt="">'; }
-  else { el.textContent = name.charAt(0).toUpperCase(); }
+function updateAvatar(url,name){
+  var el=document.getElementById('avatarDisplay');
+  if(url)el.innerHTML='<img src=\"'+url+'\" alt=\"\"><input type=\"file\" accept=\"image/*\" id=\"avatarFile\" onchange=\"uploadAvatar()\">';
+  else el.textContent=name.charAt(0).toUpperCase();
 }
 
-function saveProfile(){
-  var nickname = document.getElementById('nickname').value;
-  var avatarUrl = document.getElementById('avatarUrl').value;
-  api('/users/profile', {nickname:nickname, avatar_url:avatarUrl}).then(function(d){
+function saveAvatarUrl(){
+  var url=document.getElementById('avatarUrl').value;
+  if(!url){showToast('请输入头像链接','err');return}
+  api('/users/profile',{avatar_url:url}).then(function(d){
+    if(d.success){updateAvatar(url,document.getElementById('nickname').value||'?');showToast('头像已更新')}
+    else showToast(d.error||'保存失败','err');
+  });
+}
+
+function uploadAvatar(){
+  var file=document.getElementById('avatarFile').files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){showToast('图片不能超过5MB','err');return}
+  var fd=new FormData();fd.append('avatar',file);
+  fetch(AUTH+'/api/auth/upload-avatar',{method:'POST',credentials:'include',body:fd}).then(function(r){return r.json()}).then(function(d){
     if(d.success){
-      showToast('保存成功','ok');
-      document.getElementById('infoNick').textContent = nickname || '-';
-      updateAvatar(avatarUrl, nickname || '?');
-    } else {
-      showToast(d.error || '保存失败','err');
-    }
+      var url = d.data.url;
+      var fullUrl = AUTH + url;
+      updateAvatar(fullUrl,document.getElementById('nickname').value||'?');
+      document.getElementById('avatarUrl').value=fullUrl;
+      showToast('头像已上传');
+    } else showToast(d.error||'上传失败','err');
   });
 }
 
-function changePwd(){
-  var oldPwd = document.getElementById('oldPwd').value;
-  var newPwd = document.getElementById('newPwd').value;
-  var confirmPwd = document.getElementById('confirmPwd').value;
-  if(!oldPwd || !newPwd){ showToast('请填写完整','err'); return; }
-  if(newPwd.length < 6){ showToast('密码至少6位','err'); return; }
-  if(newPwd !== confirmPwd){ showToast('两次密码不一致','err'); return; }
-  api('/auth/change-password', {oldPassword:oldPwd, newPassword:newPwd}).then(function(d){
+function saveNickname(){
+  var v=document.getElementById('nickname').value;
+  if(!v){showToast('请输入昵称','err');return}
+  api('/users/profile',{nickname:v}).then(function(d){
+    if(d.success){document.getElementById('infoNick').textContent=v;showToast('昵称已更新')}
+    else showToast(d.error||'保存失败','err');
+  });
+}
+
+function saveUsername(){
+  var v=document.getElementById('username').value;
+  if(!v){showToast('请输入用户名','err');return}
+  if(!/^[a-zA-Z0-9_]+$/.test(v)){showToast('用户名只能包含字母和数字','err');return}
+  api('/users/profile',{username:v}).then(function(d){
+    if(d.success){document.getElementById('infoUser').textContent=v;showToast('用户名已更新')}
+    else showToast(d.error||'保存失败','err');
+  });
+}
+
+function sendPhoneCode(){
+  var phone=document.getElementById('bindPhone').value;
+  if(!phone||phone.length<11){showToast('请输入正确手机号','err');return}
+  var btn=document.getElementById('sendPhoneBtn');btn.disabled=true;
+  api('/auth/send-phone-code',{phone:phone}).then(function(d){
+    showToast(d.success?'验证码已发送（演示模式）':(d.error||'发送失败'),d.success?'ok':'err');
+    if(!d.success)btn.disabled=false;
+  });
+}
+
+function bindPhone(){
+  var phone=document.getElementById('bindPhone').value;
+  var code=document.getElementById('phoneCode').value;
+  if(!phone||!code){showToast('请填写完整','err');return}
+  api('/auth/bind-phone',{phone:phone}).then(function(d){
     if(d.success){
-      showToast('密码已修改','ok');
-      document.getElementById('oldPwd').value=''; document.getElementById('newPwd').value=''; document.getElementById('confirmPwd').value='';
-    } else {
-      showToast(d.error || '修改失败','err');
-    }
+      document.getElementById('infoPhone').textContent=phone;
+      document.getElementById('phoneBindForm').style.display='none';
+      showToast('手机号已绑定');
+    } else showToast(d.error||'绑定失败','err');
   });
 }
 
-function bindQQ(){ showToast('QQ登录功能开发中','err'); }
-function bindWechat(){ showToast('微信登录功能开发中','err'); }
-function bindPhone(){ showToast('手机号绑定功能开发中','err'); }
+function sendReset(){
+  var btn=document.getElementById('sendResetBtn');btn.disabled=true;btn.textContent='发送中...';
+  api('/password/send-reset',{}).then(function(d){
+    if(d.success){showToast('重置链接已发送到你的邮箱')}
+    else{showToast(d.error||'发送失败','err');btn.disabled=false;btn.textContent='发送重置链接到邮箱'}
+  });
+}
 </script>
 </body>
 </html>

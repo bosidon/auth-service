@@ -12,22 +12,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 .back:hover{color:#e0e0e0}
 .card{background:#14141e;border:1px solid #1e1e2a;border-radius:14px;padding:24px;margin-bottom:16px}
 .card-title{font-size:0.88rem;font-weight:600;color:#94a3b8;margin-bottom:16px;display:flex;align-items:center;gap:6px}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:0.88rem}
-.info-row:last-child{border:none}
-.info-label{color:#94a3b8}
-.info-value{color:#e0e0e0;text-align:right;max-width:60%;word-break:break-all}
-.avatar-wrap{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:0.88rem;gap:8px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:#94a3b8;white-space:nowrap;flex-shrink:0;width:50px}
+.info-value{color:#e0e0e0;text-align:right;word-break:break-all;flex:1}
+.info-row .edit-input{flex:1;padding:4px 8px;border:1px solid #1e1e2a;border-radius:6px;background:#0d0d12;color:#e0e0e0;font-size:0.82rem;outline:none;text-align:right}
+.info-row .edit-input:focus{border-color:#7c3aed}
+.info-row .edit-btn{padding:4px 10px;border:none;border-radius:5px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.info-row .edit-btn:hover{opacity:.85}
+.info-row .save-hint{font-size:0.75rem;color:#34d399;margin-left:6px;display:none}
+.avatar-wrap{display:flex;align-items:center;gap:16px}
 .avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .avatar input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.avatar-url-row{display:flex;gap:8px;margin-top:8px}
+.avatar-url-row{display:flex;gap:8px;margin-top:10px}
 .avatar-url-row input{flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.82rem;outline:none}
 .avatar-url-row input:focus{border-color:#7c3aed}
-label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
-.input{width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none;margin-bottom:12px;box-sizing:border-box}
-.input:focus{border-color:#7c3aed}
-.row{display:flex;gap:8px;margin-bottom:12px}
-.row .input{flex:1;margin-bottom:0}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 20px;border-radius:8px;border:none;font-size:0.88rem;font-weight:600;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap}
 .btn-primary{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff}
 .btn-primary:hover{opacity:.9}
@@ -49,7 +49,8 @@ label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
 .vip-plan.free{color:#6b7280}
 .vip-plan.vip{color:#f59e0b}
 .vip-expires{font-size:0.75rem;color:#6b7280;margin-top:2px}
-.desc{font-size:0.75rem;color:#6b7280;margin-top:-8px;margin-bottom:12px}
+.desc{font-size:0.75rem;color:#6b7280;margin-top:4px}
+.sec{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06)}
 .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:0.88rem;z-index:9999;display:none;animation:fadeDown .3s ease;text-align:center}
 .toast.ok{background:#065f46;color:#6ee7b7}
 .toast.err{background:#7f1d1d;color:#fca5a5}
@@ -59,16 +60,6 @@ label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
 <body>
 <div class="container">
   <a href="https://xianbao.online" class="back">← 返回仙宝</a>
-
-  <!-- 账户信息 -->
-  <div class="card">
-    <div class="card-title">👤 账户信息</div>
-    <div class="info-row"><span class="info-label">邮箱</span><span class="info-value" id="infoEmail">-</span></div>
-    <div class="info-row"><span class="info-label">用户名</span><span class="info-value" id="infoUser">-</span></div>
-    <div class="info-row"><span class="info-label">昵称</span><span class="info-value" id="infoNick">-</span></div>
-    <div class="info-row"><span class="info-label">手机号</span><span class="info-value" id="infoPhone">未绑定</span></div>
-    <div class="info-row"><span class="info-label">注册时间</span><span class="info-value" id="infoCreated">-</span></div>
-  </div>
 
   <!-- 头像 -->
   <div class="card">
@@ -85,48 +76,39 @@ label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
     </div>
   </div>
 
-  <!-- 昵称 -->
+  <!-- 账户信息（内联编辑） -->
   <div class="card">
-    <div class="card-title">✏️ 昵称</div>
-    <div class="row">
-      <input type="text" id="nickname" class="input" placeholder="设置昵称">
-      <button class="btn btn-primary btn-sm" onclick="saveNickname()">保存</button>
+    <div class="card-title">👤 账户信息</div>
+    <div class="info-row">
+      <span class="info-label">邮箱</span>
+      <span class="info-value" id="infoEmail">-</span>
     </div>
-    <div class="desc">昵称将显示在各大站点</div>
+
+    <div class="info-row">
+      <span class="info-label">昵称</span>
+      <input class="edit-input" id="editNickname" placeholder="设置昵称">
+      <button class="edit-btn" onclick="saveField('nickname')">保存</button>
+    </div>
+    <div class="info-row">
+      <span class="info-label">手机</span>
+      <span class="info-value" id="infoPhone">未绑定</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">注册</span>
+      <span class="info-value" id="infoCreated">-</span>
+    </div>
   </div>
 
-  <!-- 用户名 -->
-  <div class="card">
-    <div class="card-title">🔤 用户名</div>
-    <div class="row">
-      <input type="text" id="username" class="input" placeholder="字母数字下划线">
-      <button class="btn btn-primary btn-sm" onclick="saveUsername()">保存</button>
-    </div>
-    <div class="desc">用户名用于登录，仅限字母数字下划线</div>
-  </div>
-
-  <!-- 手机号 -->
+  <!-- 绑定手机号 -->
   <div class="card">
     <div class="card-title">📱 绑定手机号</div>
-    <div class="info-row" id="phoneStatusRow" style="display:none">
-      <span class="info-label">当前</span>
-      <span class="info-value" id="infoPhone2">-</span>
+    <div class="row" style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="bindPhone" class="input" placeholder="手机号" style="flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none">
+      <button class="btn btn-outline btn-sm" id="sendPhoneBtn" onclick="sendPhoneCode()">获取验证码</button>
     </div>
-    <div id="phoneBindForm">
-      <div class="row">
-        <input type="text" id="bindPhone" class="input" placeholder="手机号">
-        <button class="btn btn-outline btn-sm" id="sendPhoneBtn" onclick="sendPhoneCode()">获取验证码</button>
-      </div>
-      <div class="row">
-        <input type="text" id="phoneCode" class="input" placeholder="验证码">
-        <button class="btn btn-primary btn-sm" onclick="bindPhone()">绑定</button>
-      </div>
-    </div>
-    <div id="phoneBound" style="display:none">
-      <div class="row">
-        <input type="text" id="newPhone" class="input" placeholder="新手机号">
-        <button class="btn btn-outline btn-sm" onclick="showToast('暂不支持解绑','err')">解绑</button>
-      </div>
+    <div class="row" style="display:flex;gap:8px">
+      <input type="text" id="phoneCode" placeholder="验证码" style="flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none">
+      <button class="btn btn-primary btn-sm" onclick="bindPhone()">绑定</button>
     </div>
   </div>
 
@@ -167,9 +149,9 @@ label{display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px}
 
 <script src="https://xianbao.online/assets/xianbao/auth-widget.js"></script>
 <script>
-var AUTH = 'https://auth.xianbao.online';
+var AUTH='https://auth.xianbao.online';
 function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok');e.style.display='block';setTimeout(function(){e.style.display='none'},3000)}
-function api(p,d){return fetch(AUTH+'/api'+p,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:d?JSON.stringify(d):void 0}).then(function(r){return r.json()})}
+function api(p,d,m){return fetch(AUTH+'/api'+p,{method:m||'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:d?JSON.stringify(d):void 0}).then(function(r){return r.json()})}
 function apiGet(p){return fetch(AUTH+'/api'+p,{credentials:'include'}).then(function(r){return r.json()})}
 
 XianbaoAuth.checkAuth().then(function(){
@@ -182,21 +164,12 @@ function loadData(){
     if(!d.success)return;
     var u=d.data;
     document.getElementById('infoEmail').textContent=u.email||'-';
-    document.getElementById('infoUser').textContent=u.username||'-';
-    document.getElementById('infoNick').textContent=u.nickname||'-';
+    document.getElementById('editUsername').value=u.username||'';
+    document.getElementById('editNickname').value=u.nickname||'';
+    document.getElementById('infoPhone').textContent=u.phone||'未绑定';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
-    document.getElementById('nickname').value=u.nickname||'';
-    document.getElementById('username').value=u.username||'';
     document.getElementById('avatarUrl').value=u.avatar_url||'';
     updateAvatar(u.avatar_url,u.nickname||u.username||'?');
-    if(u.phone){
-      document.getElementById('infoPhone').textContent=u.phone;
-      document.getElementById('infoPhone').parentElement.style.display='flex';
-      document.getElementById('phoneStatusRow').style.display='flex';
-      document.getElementById('infoPhone2').textContent=u.phone;
-      document.getElementById('phoneBindForm').style.display='none';
-      document.getElementById('phoneBound').style.display='block';
-    }
     if(u.plan&&u.plan!=='free'){
       document.getElementById('vipPlan').textContent='VIP会员';
       document.getElementById('vipPlan').className='vip-plan vip';
@@ -207,15 +180,24 @@ function loadData(){
 
 function updateAvatar(url,name){
   var el=document.getElementById('avatarDisplay');
-  if(url)el.innerHTML='<img src=\"'+url+'\" alt=\"\"><input type=\"file\" accept=\"image/*\" id=\"avatarFile\" onchange=\"uploadAvatar()\">';
+  var inp='<input type="file" accept="image/*" id="avatarFile" onchange="uploadAvatar()">';
+  if(url)el.innerHTML='<img src="'+url+'" alt="">'+inp;
   else el.textContent=name.charAt(0).toUpperCase();
+  // Ensure file input is always present
+  if(!el.querySelector('#avatarFile')){
+    var d=document.createElement('input');
+    d.type='file';d.accept='image/*';d.id='avatarFile';
+    d.onchange=function(){uploadAvatar()};
+    d.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer';
+    el.appendChild(d);
+  }
 }
 
 function saveAvatarUrl(){
   var url=document.getElementById('avatarUrl').value;
   if(!url){showToast('请输入头像链接','err');return}
-  api('/users/profile',{avatar_url:url}).then(function(d){
-    if(d.success){updateAvatar(url,document.getElementById('nickname').value||'?');showToast('头像已更新')}
+  api('/users/profile',{avatar_url:url},'PATCH').then(function(d){
+    if(d.success){updateAvatar(url,document.getElementById('editNickname').value||'?');showToast('头像已更新')}
     else showToast(d.error||'保存失败','err');
   });
 }
@@ -227,30 +209,21 @@ function uploadAvatar(){
   var fd=new FormData();fd.append('avatar',file);
   fetch(AUTH+'/api/auth/upload-avatar',{method:'POST',credentials:'include',body:fd}).then(function(r){return r.json()}).then(function(d){
     if(d.success){
-      var url = d.data.url;
-      var fullUrl = AUTH + url;
-      updateAvatar(fullUrl,document.getElementById('nickname').value||'?');
-      document.getElementById('avatarUrl').value=fullUrl;
+      var url=d.data.url;
+      updateAvatar(AUTH+url,document.getElementById('editNickname').value||'?');
+      document.getElementById('avatarUrl').value=AUTH+url;
       showToast('头像已上传');
     } else showToast(d.error||'上传失败','err');
   });
 }
 
-function saveNickname(){
-  var v=document.getElementById('nickname').value;
-  if(!v){showToast('请输入昵称','err');return}
-  api('/users/profile',{nickname:v}).then(function(d){
-    if(d.success){document.getElementById('infoNick').textContent=v;showToast('昵称已更新')}
-    else showToast(d.error||'保存失败','err');
-  });
-}
-
-function saveUsername(){
-  var v=document.getElementById('username').value;
-  if(!v){showToast('请输入用户名','err');return}
-  if(!/^[a-zA-Z0-9_]+$/.test(v)){showToast('用户名只能包含字母和数字','err');return}
-  api('/users/profile',{username:v}).then(function(d){
-    if(d.success){document.getElementById('infoUser').textContent=v;showToast('用户名已更新')}
+function saveField(field){
+  var input=document.getElementById('edit'+field.charAt(0).toUpperCase()+field.slice(1));
+  var val=input.value;
+  if(!val){showToast('请输入'+field,'err');return}
+  var body={};body[field]=val;
+  api('/users/profile',body,'PATCH').then(function(d){
+    if(d.success)showToast('已更新');
     else showToast(d.error||'保存失败','err');
   });
 }
@@ -270,18 +243,15 @@ function bindPhone(){
   var code=document.getElementById('phoneCode').value;
   if(!phone||!code){showToast('请填写完整','err');return}
   api('/auth/bind-phone',{phone:phone}).then(function(d){
-    if(d.success){
-      document.getElementById('infoPhone').textContent=phone;
-      document.getElementById('phoneBindForm').style.display='none';
-      showToast('手机号已绑定');
-    } else showToast(d.error||'绑定失败','err');
+    if(d.success){document.getElementById('infoPhone').textContent=phone;showToast('手机号已绑定')}
+    else showToast(d.error||'绑定失败','err');
   });
 }
 
 function sendReset(){
   var btn=document.getElementById('sendResetBtn');btn.disabled=true;btn.textContent='发送中...';
   api('/password/send-reset',{}).then(function(d){
-    if(d.success){showToast('重置链接已发送到你的邮箱')}
+    if(d.success){showToast('验证邮件已发送，请查看邮箱（包括垃圾箱）')}
     else{showToast(d.error||'发送失败','err');btn.disabled=false;btn.textContent='发送重置链接到邮箱'}
   });
 }

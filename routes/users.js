@@ -31,7 +31,7 @@ router.get('/logs', authenticateToken, async (req, res) => {
 // ===== 更新个人信息 =====
 router.patch('/profile', authenticateToken, async (req, res) => {
   try {
-    const { nickname } = req.body;
+    const { nickname, avatar_url } = req.body;
 
     if (nickname !== undefined) {
       await db.run(
@@ -39,6 +39,7 @@ router.patch('/profile', authenticateToken, async (req, res) => {
         [nickname, req.user.id]
       );
     }
+
 
     const user = await db.get(
       'SELECT id, username, email, nickname, plan, avatar_url, created_at FROM users WHERE id = ?',

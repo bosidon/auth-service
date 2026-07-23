@@ -2,7 +2,7 @@
  * 仙宝统一登录组件 v2
  */
 (function(w){
-  var AUTH = "https://auth.xianbao.online";
+  var AUTH = "";
   var state = { loggedIn: false, user: null, initEl: null, _ready: false, _readyCbs: [], _authChangeCbs: [] };
 checkAuth();
   function api(path, opts) {
@@ -30,7 +30,7 @@ checkAuth();
           '<span style="color:#94a3b8;font-size:13px">' + e(name) + '</span>' +
           '<span style="font-size:10px;color:#64748b">&#9660;</span>' +
           '<div class="xianbao-auth-dd" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#14141e;border:1px solid #1e1e2a;border-radius:10px;padding:6px;min-width:130px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4)">' +
-            '<a href="https://auth.xianbao.online/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号设置</a>' +
+            '<a href="/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号设置</a>' +
             '<div style="height:1px;background:#1e1e2a;margin:4px 6px"></div>' +
             '<a href="#" id="xianbao-auth-logout" style="display:block;padding:8px 12px;border-radius:6px;color:#f87171;text-decoration:none;font-size:13px">&#128682; 退出登录</a>' +
           '</div>' +
@@ -112,7 +112,7 @@ checkAuth();
       '<input id="lp-pwd" type="password" placeholder="密码" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:16px;box-sizing:border-box">' +
       '<button id="lp-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
       '<div id="lp-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
-      '<div style="text-align:center;margin-top:12px"><a href="https://auth.xianbao.online/reset-password" style="color:#64748b;font-size:13px;text-decoration:none">忘记密码？</a></div>' +
+      '<div style="text-align:center;margin-top:12px"><a href="/reset-password" style="color:#64748b;font-size:13px;text-decoration:none">忘记密码？</a></div>' +
       '<div style="text-align:center;margin-top:8px"><span style="color:#64748b;font-size:13px">还没有账号？</span><a href="#" id="go-register" style="color:#7c3aed;font-size:13px;text-decoration:none">立即注册</a></div>' +
     '</div>';
   }

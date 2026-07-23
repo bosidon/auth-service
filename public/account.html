@@ -143,7 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 
 <script src="https://xianbao.online/assets/xianbao/auth-widget.js"></script>
 <script>
-var AUTH='https://auth.xianbao.online';
+var AUTH='';
 function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok');e.style.display='block';setTimeout(function(){e.style.display='none'},3000)}
 function api(p,d,m){return fetch(AUTH+'/api'+p,{method:m||'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:d?JSON.stringify(d):void 0}).then(function(r){return r.json()})}
 function apiGet(p){return fetch(AUTH+'/api'+p,{credentials:'include'}).then(function(r){return r.json()})}

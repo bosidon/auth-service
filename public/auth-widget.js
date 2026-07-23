@@ -3,7 +3,8 @@
  */
 (function(w){
   var AUTH = "https://auth.xianbao.online";
-  var state = { loggedIn: false, user: null, initEl: null };
+  var state = { loggedIn: false, user: null, initEl: null, _ready: false, _readyCbs: [], _authChangeCbs: [] };
+checkAuth();
   function api(path, opts) {
     opts = opts || {};
     var url = AUTH + "/api/auth" + path;
@@ -57,9 +58,11 @@
       state.loggedIn = !!res.success;
       state.user = res.success ? res.data : null;
       render();
+      state._authChangeCbs.forEach(function(fn){fn({loggedIn:state.loggedIn,user:state.user});});
     }).catch(function(e){
       state.loggedIn = false; state.user = null;
       render();
+      state._authChangeCbs.forEach(function(fn){fn({loggedIn:false,user:null});});
     });
   }
   function init(opts) {
@@ -191,6 +194,7 @@
     init: init, closeModal: closeModal,
     isLoggedIn: function(){ return state.loggedIn; },
     getUser: function(){ return state.user; },
+    onAuthChange: function(cb){ if(typeof cb==='function'){state._authChangeCbs.push(cb);checkAuth().then(function(){cb({loggedIn:state.loggedIn,user:state.user});});} },
     showLogin: showModal, logout: logout, checkAuth: checkAuth
   };
 })(window);

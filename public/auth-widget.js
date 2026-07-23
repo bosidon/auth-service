@@ -22,9 +22,11 @@ checkAuth();
   function render() {
     if (!state.initEl) return;
     if (state.loggedIn && state.user) {
-      var name = state.user.nickname || state.user.username || "用户";
+      var name = state.user.nickname || state.user.email || "用户";
+      var ava = state.user.avatar_url ? '<img src="'+AUTH+state.user.avatar_url+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0">' : '<span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0">' + (name.charAt(0).toUpperCase()) + '</span>';
       state.initEl.innerHTML =
-        '<div class="xianbao-auth-user" style="display:flex;align-items:center;gap:4px;position:relative;cursor:pointer">' +
+        '<div class="xianbao-auth-user" style="display:flex;align-items:center;gap:6px;position:relative;cursor:pointer">' +
+          ava +
           '<span style="color:#94a3b8;font-size:13px">' + e(name) + '</span>' +
           '<span style="font-size:10px;color:#64748b">&#9660;</span>' +
           '<div class="xianbao-auth-dd" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#14141e;border:1px solid #1e1e2a;border-radius:10px;padding:6px;min-width:130px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4)">' +

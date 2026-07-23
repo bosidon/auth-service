@@ -39,7 +39,12 @@ router.patch('/profile', authenticateToken, async (req, res) => {
         [nickname, req.user.id]
       );
     }
-
+    if (avatar_url !== undefined) {
+      await db.run(
+        'UPDATE users SET avatar_url = ?, updated_at = datetime("now") WHERE id = ?',
+        [avatar_url, req.user.id]
+      );
+    }
 
     const user = await db.get(
       'SELECT id, username, email, nickname, plan, avatar_url, created_at FROM users WHERE id = ?',

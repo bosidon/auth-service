@@ -25,9 +25,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 .avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .avatar input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.avatar-url-row{display:flex;gap:8px;margin-top:10px}
-.avatar-url-row input{flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.82rem;outline:none}
-.avatar-url-row input:focus{border-color:#7c3aed}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 20px;border-radius:8px;border:none;font-size:0.88rem;font-weight:600;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap}
 .btn-primary{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff}
 .btn-primary:hover{opacity:.9}
@@ -70,10 +67,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
       </div>
       <div style="font-size:0.82rem;color:#6b7280">点击头像选择图片上传</div>
     </div>
-    <div class="avatar-url-row">
-      <input type="text" id="avatarUrl" placeholder="或输入头像链接">
-      <button class="btn btn-outline btn-sm" onclick="saveAvatarUrl()">保存</button>
-    </div>
+  
   </div>
 
   <!-- 账户信息（内联编辑） -->
@@ -164,12 +158,10 @@ function loadData(){
     if(!d.success)return;
     var u=d.data;
     document.getElementById('infoEmail').textContent=u.email||'-';
-    document.getElementById('editUsername').value=u.username||'';
     document.getElementById('editNickname').value=u.nickname||'';
     document.getElementById('infoPhone').textContent=u.phone||'未绑定';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
-    document.getElementById('avatarUrl').value=u.avatar_url||'';
-    updateAvatar(u.avatar_url,u.nickname||u.username||'?');
+updateAvatar(u.avatar_url,u.nickname||'?');
     if(u.plan&&u.plan!=='free'){
       document.getElementById('vipPlan').textContent='VIP会员';
       document.getElementById('vipPlan').className='vip-plan vip';
@@ -193,15 +185,6 @@ function updateAvatar(url,name){
   }
 }
 
-function saveAvatarUrl(){
-  var url=document.getElementById('avatarUrl').value;
-  if(!url){showToast('请输入头像链接','err');return}
-  api('/users/profile',{avatar_url:url},'PATCH').then(function(d){
-    if(d.success){updateAvatar(url,document.getElementById('editNickname').value||'?');showToast('头像已更新')}
-    else showToast(d.error||'保存失败','err');
-  });
-}
-
 function uploadAvatar(){
   var file=document.getElementById('avatarFile').files[0];
   if(!file)return;
@@ -211,7 +194,7 @@ function uploadAvatar(){
     if(d.success){
       var url=d.data.url;
       updateAvatar(AUTH+url,document.getElementById('editNickname').value||'?');
-      document.getElementById('avatarUrl').value=AUTH+url;
+      
       showToast('头像已上传');
     } else showToast(d.error||'上传失败','err');
   });

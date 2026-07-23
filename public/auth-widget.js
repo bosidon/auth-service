@@ -23,7 +23,8 @@ checkAuth();
     if (!state.initEl) return;
     if (state.loggedIn && state.user) {
       var name = state.user.nickname || state.user.email || "用户";
-      var ava = state.user.avatar_url ? '<img src="'+AUTH+state.user.avatar_url+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0">' : '<span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0">' + (name.charAt(0).toUpperCase()) + '</span>';
+      var avaUrl = state.user.avatar_url; if(avaUrl&&avaUrl.indexOf('http')!==0)avaUrl=AUTH+avaUrl;
+      var ava = avaUrl ? '<img src="'+avaUrl+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0">' : '<span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0">' + (name.charAt(0).toUpperCase()) + '</span>';
       state.initEl.innerHTML =
         '<div class="xianbao-auth-user" style="display:flex;align-items:center;gap:6px;position:relative;cursor:pointer">' +
           ava +

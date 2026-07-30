@@ -96,6 +96,8 @@ checkAuth();
           '<span onclick="XianbaoAuth.closeModal()" style="cursor:pointer;color:#64748b;font-size:18px">&#10005;</span>' +
         '</div>' +
         (tab==="password" ? loginPwdHtml() : loginCodeHtml()) +
+        '<div style="display:flex;align-items:center;gap:10px;margin:18px 0 6px"><div style="flex:1;height:1px;background:#1e1e2a"></div><span style="font-size:12px;color:#64748b">其他登录方式</span><div style="flex:1;height:1px;background:#1e1e2a"></div></div>' +
+        '<button id="wx-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:#07c160;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">&#128241; 微信扫码登录</button>' +
       '</div>';
     document.getElementById("tab-pwd").onclick = function(){ showLogin("password"); };
     document.getElementById("tab-code").onclick = function(){ showLogin("code"); };
@@ -192,6 +194,21 @@ checkAuth();
     return d.innerHTML;
   }
   document.addEventListener("click", closeDropdown);
+  // 微信扫码登录回跳：检测 ?error=wechat / ?error=wechat_state，自动弹登录框并提示
+  (function handleWechatError() {
+    try {
+      var p = new URLSearchParams(location.search);
+      var err = p.get("error");
+      if (err === "wechat" || err === "wechat_state") {
+        setTimeout(function() {
+          showModal();
+          var msg = err === "wechat_state" ? "登录校验失败，请重试" : "微信登录失败，请重试或使用其他登录方式";
+          var el = document.getElementById("lp-err");
+          if (el) { el.textContent = msg; el.style.display = "block"; }
+        }, 300);
+      }
+    } catch (_) {}
+  })();
   w.XianbaoAuth = {
     init: init, closeModal: closeModal,
     isLoggedIn: function(){ return state.loggedIn; },

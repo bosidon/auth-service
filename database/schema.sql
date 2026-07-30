@@ -63,3 +63,24 @@ CREATE INDEX IF NOT EXISTS idx_user_logs_created_at ON user_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_user_logs_action ON user_logs(action);
 CREATE INDEX IF NOT EXISTS idx_usage_user_id ON usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_service ON usage(service);
+
+-- 微信扫码登录（开放平台网站应用 qrconnect）
+-- 微信身份一律落本表，主键复用 users.id；绝不回写子站 users，避免多表错配
+CREATE TABLE IF NOT EXISTS user_oauth (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL,
+  provider      TEXT    NOT NULL,                 -- 'wechat_web'
+  openid        TEXT    NOT NULL,
+  unionid       TEXT,                             -- 服务号已绑开放平台后必返回
+  nickname      TEXT,
+  avatar_url    TEXT,
+  access_token  TEXT,                             -- 可选，建议加密存储
+  refresh_token TEXT,                             -- 可选，建议加密存储
+  expires_at    DATETIME,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(provider, openid),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_user_oauth_unionid ON user_oauth(unionid);
+CREATE INDEX IF NOT EXISTS idx_user_oauth_user    ON user_oauth(user_id);

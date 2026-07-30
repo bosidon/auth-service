@@ -52,6 +52,7 @@ app.get("/account", (req, res) => res.sendFile(path.join(__dirname, "public", "a
 initDatabase();
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', require('./routes/wechat'));      // 微信扫码登录（方案 A）
 app.use('/api/auth', require('./routes/email-code'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/usage', require('./routes/usage'));

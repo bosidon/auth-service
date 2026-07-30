@@ -121,8 +121,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
       <button class="btn btn-outline btn-sm" onclick="showToast('QQ登录开发中','err')">绑定</button>
     </div>
     <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="showToast('微信登录开发中','err')">绑定</button>
+      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wechatStatus">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" id="wechatBindBtn" onclick="bindWechat()">绑定</button>
     </div>
   </div>
 
@@ -154,6 +154,7 @@ XianbaoAuth.checkAuth().then(function(){
 });
 
 function loadData(){
+  loadWechatStatus();
   apiGet('/auth/me').then(function(d){
     if(!d.success)return;
     var u=d.data;
@@ -236,6 +237,34 @@ function sendReset(){
   api('/password/send-reset',{}).then(function(d){
     if(d.success){showToast('验证邮件已发送，请查看邮箱（包括垃圾箱）')}
     else{showToast(d.error||'发送失败','err');btn.disabled=false;btn.textContent='发送重置链接到邮箱'}
+  });
+}
+
+// ===== 微信绑定 / 解绑 =====
+function loadWechatStatus(){
+  apiGet('/auth/wechat/status').then(function(d){
+    var btn=document.getElementById('wechatBindBtn');
+    var st=document.getElementById('wechatStatus');
+    if(d.success&&d.data&&d.data.bound){
+      st.textContent='已绑定'+(d.data.nickname?('（'+d.data.nickname+'）'):'');
+      btn.textContent='解绑';
+      btn.onclick=unbindWechat;
+    } else {
+      st.textContent='未绑定';
+      btn.textContent='绑定';
+      btn.onclick=bindWechat;
+    }
+  }).catch(function(){ /* 未登录等忽略 */ });
+}
+function bindWechat(){
+  window.location.href=AUTH+'/api/auth/wechat/authorize';
+}
+function unbindWechat(){
+  if(!confirm('确定解除微信绑定？解除后仍可用邮箱登录。'))return;
+  api('/auth/wechat/unbind').then(function(d){
+    if(d.success){showToast('微信已解绑');loadWechatStatus();}
+    else if(d.error==='last_login_method'){showToast('微信是当前唯一登录方式，请先设置密码','err');}
+    else showToast(d.error||'解绑失败','err');
   });
 }
 </script>

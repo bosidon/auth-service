@@ -226,7 +226,7 @@ tr:hover td { background: #1a1a26; }
         <thead>
           <tr>
             <th>ID</th>
-            <th>昵称</th>
+            <th style="min-width:80px">昵称</th>
             <th>邮箱</th>
             <th>角色</th>
             <th>套餐</th>
@@ -368,7 +368,7 @@ function renderUsers(users) {
 
     return `<tr>
       <td style="color:#666">${u.id}</td>
-      <td><strong>${escHtml(u.nickname || '未设置')}</strong></td>
+      <td style="min-width:80px"><strong>${escHtml(u.nickname || '未设置')}</strong></td>
       <td style="color:#aaa">${escHtml(u.email)}</td>
       <td>${roleSelect}</td>
       <td>${planSelect}</td>

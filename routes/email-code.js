@@ -86,22 +86,17 @@ router.post('/login-code', async (req, res) => {
 
     await db.run('UPDATE email_codes SET used = 1 WHERE id = ?', [validCode.id]);
 
-    let user = await db.get('SELECT id, username, email, nickname, role, plan FROM users WHERE email = ?', [email]);
+    let user = await db.get('SELECT id, email, nickname, role, plan FROM users WHERE email = ?', [email]);
 
     if (!user) {
       // 自动注册
-      let username = email.split('@')[0].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '');
-      if (!username) username = 'user';
-
-      const exists = await db.get('SELECT id FROM users WHERE username = ?', [username]);
-      if (exists) username = username + String(Math.floor(100 + Math.random() * 900));
-
+      const nick = email.split('@')[0].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '') || '用户';
       const randomHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
       const result = await db.run(
-        `INSERT INTO users (username, email, password_hash, nickname, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [username, email, randomHash, username]
+        `INSERT INTO users (email, password_hash, nickname, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
+        [email, randomHash, nick]
       );
-      user = { id: result.lastID, username, email, nickname: username, role: 'user', plan: 'free' };
+      user = { id: result.lastID, email, nickname: nick, role: 'user', plan: 'free' };
     }
 
     const token = generateToken(user);
@@ -115,7 +110,7 @@ router.post('/login-code', async (req, res) => {
     res.json({
       success: true,
       data: {
-        user: { id: user.id, username: user.username, email: user.email, nickname: user.nickname, role: user.role },
+        user: { id: user.id, email: user.email, nickname: user.nickname, role: user.role },
         token
       }
     });

@@ -118,21 +118,20 @@ async function findOrCreateUser(openid, nickname, avatar) {
         [nickname || null, avatar || null, bind.user_id]
       );
     }
-    return db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [bind.user_id]);
+    return db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [bind.user_id]);
   }
-  const username = 'wx_' + openid;
-  const email = username + '@wechat.local';
+  const email = 'wx_' + openid + '@wechat.local';
   const hash = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10);
   const displayName = nickname || '微信用户';
   const r = await db.run(
-    'INSERT INTO users (username, email, password_hash, nickname, avatar_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
-    [username, email, hash, displayName, avatar || null]
+    'INSERT INTO users (email, password_hash, nickname, avatar_url, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+    [email, hash, displayName, avatar || null]
   );
   await db.run(
     "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
     [r.lastID, openid]
   );
-  return db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
+  return db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
 }
 
 /* ===== 1. 微信服务器验证 ===== */
@@ -254,7 +253,7 @@ router.get('/api/auth/wechat/status', async (req, res) => {
       }
       return res.json({ success: true, data: { bound: true } });
     }
-    const user = await db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [session.userId]);
+    const user = await db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [session.userId]);
     if (!user) {
       return res.json({ success: false, error: '用户不存在' });
     }

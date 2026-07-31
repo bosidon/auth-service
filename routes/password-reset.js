@@ -86,8 +86,8 @@ router.post('/reset', async (req, res) => {
     await db.run("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?", [hash, reset.user_id]);
     await db.run('UPDATE password_resets SET used = 1 WHERE id = ?', [reset.id]);
 
-    var user = await db.get('SELECT id, username, email, role FROM users WHERE id = ?', [reset.user_id]);
-    var jwtToken = jwt.sign({ id: user.id, username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    var user = await db.get('SELECT id, email, role FROM users WHERE id = ?', [reset.user_id]);
+    var jwtToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({ success: true, token: jwtToken, user: user });
   } catch (error) {

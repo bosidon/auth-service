@@ -7,9 +7,9 @@ const { authenticateToken, generateToken, setTokenCookie, clearTokenCookie } = r
 // ===== 注册 =====
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { email, password, nickname } = req.body;
 
-    if (!username || !email || !password) {
+    if (!email || !password) {
       return res.status(400).json({ success: false, error: '请填写所有必填字段' });
     }
     if (password.length < 6) {
@@ -17,9 +17,9 @@ router.post('/register', async (req, res) => {
     }
 
     // 检查重复
-    const existing = await db.get('SELECT id FROM users WHERE email = ? OR username = ?', [email, username]);
+    const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) {
-      return res.status(400).json({ success: false, error: '用户名或邮箱已被注册' });
+      return res.status(400).json({ success: false, error: '邮箱已被注册' });
     }
 
     // 创建用户
@@ -27,14 +27,14 @@ router.post('/register', async (req, res) => {
     const hash = bcrypt.hashSync(password, salt);
 
     const result = await db.run(
-      'INSERT INTO users (username, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, datetime("now"), datetime("now"))',
-      [username, email, hash]
+      'INSERT INTO users (email, password_hash, nickname, created_at, updated_at) VALUES (?, ?, ?, datetime("now"), datetime("now"))',
+      [email, hash, nickname || email.split('@')[0]]
     );
 
     const userId = result.lastID;
 
     // 生成token
-    const user = { id: userId, username, email, nickname: username };
+    const user = { id: userId, email, nickname: nickname || email.split('@')[0] };
     const token = generateToken(user);
     setTokenCookie(res, token);
 
@@ -44,7 +44,7 @@ router.post('/register', async (req, res) => {
       [userId, 'register', JSON.stringify({ method: 'email' }), req.ip, req.headers['user-agent'] || '']
     );
 
-    const createdUser = await db.get('SELECT id, username, email, nickname, role, created_at FROM users WHERE id = ?', [userId]);
+    const createdUser = await db.get('SELECT id, email, nickname, role, created_at FROM users WHERE id = ?', [userId]);
 
     res.json({ success: true, data: { user: createdUser, token } });
 
@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, error: '请填写邮箱和密码' });
     }
 
-    const user = await db.get('SELECT id, username, email, nickname, role, password_hash FROM users WHERE email = ?', [email]);
+    const user = await db.get('SELECT id, email, nickname, role, password_hash FROM users WHERE email = ?', [email]);
 
     if (!user) {
       return res.status(401).json({ success: false, error: '邮箱或密码错误' });
@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       data: {
-        user: { id: user.id, username: user.username, email: user.email, nickname: user.nickname, role: user.role || 'user' },
+        user: { id: user.id, email: user.email, nickname: user.nickname, role: user.role || 'user' },
         token
       }
     });
@@ -201,7 +201,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db.get(
-      'SELECT id, username, email, nickname, role, avatar_url, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, avatar_url, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
 
@@ -254,7 +254,7 @@ router.post("/verify", async (req, res) => {
     
     // 查数据库获取完整用户信息
     const user = await db.get(
-      "SELECT id, username, email, nickname, role, plan FROM users WHERE id = ?",
+      "SELECT id, email, nickname, role, plan FROM users WHERE id = ?",
       [decoded.id]
     );
     

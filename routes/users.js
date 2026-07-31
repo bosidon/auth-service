@@ -47,7 +47,7 @@ router.patch('/profile', authenticateToken, async (req, res) => {
     }
 
     const user = await db.get(
-      'SELECT id, username, email, nickname, plan, avatar_url, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, plan, avatar_url, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
 
@@ -70,12 +70,12 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     let whereClause = '';
     const params = [];
     if (search) {
-      whereClause = 'WHERE username LIKE ? OR email LIKE ? OR nickname LIKE ?';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      whereClause = 'WHERE email LIKE ? OR nickname LIKE ?';
+      params.push(`%${search}%`, `%${search}%`);
     }
 
     const users = await db.query(
-      'SELECT id, username, email, nickname, role, plan, expires_at, avatar_url, created_at, updated_at FROM users ' +
+      'SELECT id, email, nickname, role, plan, expires_at, avatar_url, created_at, updated_at FROM users ' +
       whereClause + ' ORDER BY id ASC LIMIT ? OFFSET ?',
       [...params, limit, offset]
     );
@@ -119,7 +119,7 @@ router.patch('/:id/role', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     const user = await db.get(
-      'SELECT id, username, email, nickname, role, plan, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, plan, created_at FROM users WHERE id = ?',
       [userId]
     );
 
@@ -154,7 +154,7 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
     );
 
     const user = await db.get(
-      'SELECT id, username, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
       [userId]
     );
 
@@ -186,7 +186,7 @@ router.post('/:id/renew', authenticateToken, requireAdmin, async (req, res) => {
     );
 
     const updated = await db.get(
-      'SELECT id, username, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
       [userId]
     );
 

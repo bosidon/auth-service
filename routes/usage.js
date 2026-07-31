@@ -222,7 +222,7 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
     );
     
     const topUsers = await db.query(
-      "SELECT u.id, u.username, u.email, SUM(us.used) as total_usage FROM usage us JOIN users u ON u.id = us.user_id GROUP BY us.user_id ORDER BY total_usage DESC LIMIT 5"
+      "SELECT u.id, u.email, SUM(us.used) as total_usage FROM usage us JOIN users u ON u.id = us.user_id GROUP BY us.user_id ORDER BY total_usage DESC LIMIT 5"
     );
 
     const services = ['tarot', 'maya', 'psych_test', 'reading'];
@@ -243,7 +243,6 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
         activeUsers: userCounts[0]?.c || 0,
         topUsers: topUsers.map(u => ({
           id: u.id,
-          username: u.username,
           email: u.email,
           totalUsage: u.total_usage
         }))

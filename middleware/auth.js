@@ -63,9 +63,8 @@ function generateToken(user) {
   return jwt.sign(
     {
       id: user.id,
-      username: user.username,
       email: user.email,
-      nickname: user.nickname || user.username,
+      nickname: user.nickname,
       plan: user.plan || 'free',
       role: user.role || 'user'
     },

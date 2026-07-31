@@ -12,7 +12,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
-const { generateToken, setTokenCookie } = require('../middleware/auth');
+const { generateToken, setTokenCookie, optionalAuth } = require('../middleware/auth');
 
 const APPID = process.env.WECHAT_APPID;
 const SECRET = process.env.WECHAT_SECRET;
@@ -160,16 +160,31 @@ router.post('/wechat/callback', (req, res) => {
         if (sid.startsWith('qrscene_')) sid = sid.substring(8);
         const session = sessions.get(sid);
         if (session && Date.now() < session.expires) {
-          // 尝试获取昵称头像（仅关注用户可拿到，失败不影响登录）
-          let nickname = '', avatar = '';
-          try {
-            const ui = await getFollowedUserInfo(msg.FromUserName);
-            if (ui && ui.nickname) nickname = ui.nickname;
-            if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
-          } catch (e) {}
-          const user = await findOrCreateUser(msg.FromUserName, nickname, avatar);
-          session.userId = user.id;
-          session.openid = msg.FromUserName;
+          if (session.bindMode && session.userId) {
+            // 绑定模式：openid 关联到当前登录用户（不新建）
+            const exist = await db.get(
+              "SELECT user_id FROM user_bindings WHERE provider = 'wechat' AND identifier = ?",
+              [msg.FromUserName]
+            );
+            if (!exist) {
+              await db.run(
+                "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
+                [session.userId, msg.FromUserName]
+              );
+            }
+            session.openid = msg.FromUserName;
+          } else {
+            // 登录模式：尝试获取昵称头像（仅关注用户可拿到，失败不影响登录）
+            let nickname = '', avatar = '';
+            try {
+              const ui = await getFollowedUserInfo(msg.FromUserName);
+              if (ui && ui.nickname) nickname = ui.nickname;
+              if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
+            } catch (e) {}
+            const user = await findOrCreateUser(msg.FromUserName, nickname, avatar);
+            session.userId = user.id;
+            session.openid = msg.FromUserName;
+          }
         }
       }
       res.send('success');
@@ -181,13 +196,18 @@ router.post('/wechat/callback', (req, res) => {
 });
 
 /* ===== 3. 生成带参二维码（桌面扫码关注登录） ===== */
-router.post('/api/auth/wechat/qrcode', async (req, res) => {
+router.post('/api/auth/wechat/qrcode', optionalAuth, async (req, res) => {
   try {
     if (!APPID || !SECRET) {
       return res.status(500).json({ success: false, error: '微信配置缺失' });
     }
     const sid = crypto.randomBytes(8).toString('hex');
-    sessions.set(sid, { userId: null, expires: Date.now() + 120000 });
+    // bind=1 表示绑定模式：需登录用户，事件回调时绑定到当前账号而非新建
+    const bindUserId = req.query.bind === '1' ? (req.user ? req.user.id : null) : null;
+    if (req.query.bind === '1' && !bindUserId) {
+      return res.status(401).json({ success: false, error: '请先登录' });
+    }
+    sessions.set(sid, { userId: bindUserId, bindMode: !!bindUserId, expires: Date.now() + 120000 });
     const j = await createQrcode(sid);
     if (!j.ticket) {
       sessions.delete(sid);
@@ -217,6 +237,11 @@ router.get('/api/auth/wechat/status', async (req, res) => {
     }
     if (!session.userId) {
       return res.json({ success: false, pending: true });
+    }
+    if (session.bindMode) {
+      // 绑定模式：不登录，只返回绑定成功
+      sessions.delete(sid);
+      return res.json({ success: true, data: { bound: true } });
     }
     const user = await db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [session.userId]);
     if (!user) {

@@ -117,12 +117,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
   <div class="card">
     <div class="card-title">🔗 社交绑定</div>
     <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon qq">Q</div><div><div class="binding-name">QQ</div><div class="binding-status">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="showToast('QQ登录开发中','err')">绑定</button>
-    </div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" onclick="showToast('微信登录开发中','err')">绑定</button>
+      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wxBindStatus">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" id="wxBindBtn" onclick="startWechatBind()">绑定</button>
     </div>
   </div>
 
@@ -157,8 +153,9 @@ function loadData(){
   apiGet('/auth/me').then(function(d){
     if(!d.success)return;
     var u=d.data;
-    document.getElementById('infoEmail').textContent=u.email||'-';
-    document.getElementById('editNickname').value=u.nickname||'';
+    document.getElementById('infoEmail').textContent=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email||'-');
+    document.getElementById('editNickname').value=(u.nickname&&u.nickname!=='微信用户')?u.nickname:'';
+    loadBindings();
     document.getElementById('infoPhone').textContent=u.phone||'未绑定';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
@@ -218,6 +215,45 @@ function sendPhoneCode(){
   api('/auth/send-phone-code',{phone:phone}).then(function(d){
     showToast(d.success?'验证码已发送（演示模式）':(d.error||'发送失败'),d.success?'ok':'err');
     if(!d.success)btn.disabled=false;
+  });
+}
+
+function loadBindings(){
+  apiGet('/auth/bindings').then(function(d){
+    if(!d.success||!d.data)return;
+    var wx=false;
+    for(var i=0;i<d.data.length;i++){
+      if(d.data[i].provider==='wechat')wx=true;
+    }
+    document.getElementById('wxBindStatus').textContent=wx?'已绑定':'未绑定';
+    var btn=document.getElementById('wxBindBtn');
+    if(wx){btn.style.display='none';}
+  });
+}
+
+var wxBindTimer=null;
+function startWechatBind(){
+  var btn=document.getElementById('wxBindBtn');
+  if(btn)btn.disabled=true;
+  api('/auth/wechat/qrcode?bind=1',{}).then(function(d){
+    if(!d.success){showToast(d.error||'获取二维码失败','err');if(btn)btn.disabled=false;return}
+    var sid=d.data.sid;
+    showToast('请用微信扫码关注，完成绑定');
+    if(wxBindTimer)clearInterval(wxBindTimer);
+    wxBindTimer=setInterval(function(){
+      api('/auth/wechat/status?sid='+sid).then(function(r2){
+        if(r2.pending)return;
+        clearInterval(wxBindTimer);
+        if(r2.success&&r2.data&&r2.data.bound){
+          document.getElementById('wxBindStatus').textContent='已绑定';
+          document.getElementById('wxBindBtn').style.display='none';
+          showToast('微信绑定成功');
+        } else if(!r2.success){
+          if(btn)btn.disabled=false;
+          showToast(r2.error||'绑定失败','err');
+        }
+      });
+    },2000);
   });
 }
 

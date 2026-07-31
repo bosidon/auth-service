@@ -58,6 +58,8 @@ app.use('/api/usage', require('./routes/usage'));
 app.use('/api/vip', require('./routes/vip'));
 app.use('/api/settings', require('./routes/settings').router);
 app.use('/api/password', require('./routes/password-reset'));
+app.use('/', require('./routes/wechat'));
+app.use('/api/auth', require('./routes/bindings'));
 
 const { authenticateToken, requireAdmin } = require('./middleware/auth');
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, get, run } = require('../config/database');
-const authenticateToken = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // 获取已绑定的账号列表
 router.get('/bindings', authenticateToken, async (req, res) => {

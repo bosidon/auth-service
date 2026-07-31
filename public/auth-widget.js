@@ -92,18 +92,25 @@ checkAuth();
         '<div style="display:flex;gap:12px;margin-bottom:20px">' +
           '<span id="tab-pwd" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="password"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">密码登录</span>' +
           '<span id="tab-code" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="code"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">验证码登录</span>' +
+          '<span id="tab-wx" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="wechat"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">微信登录</span>' +
           '<span style="flex:1"></span>' +
           '<span onclick="XianbaoAuth.closeModal()" style="cursor:pointer;color:#64748b;font-size:18px">&#10005;</span>' +
         '</div>' +
-        (tab==="password" ? loginPwdHtml() : loginCodeHtml()) +
+        (tab==="password" ? loginPwdHtml() : (tab==="code" ? loginCodeHtml() : loginWechatHtml())) +
       '</div>';
     document.getElementById("tab-pwd").onclick = function(){ showLogin("password"); };
     document.getElementById("tab-code").onclick = function(){ showLogin("code"); };
-    document.getElementById("lp-btn").onclick = doPasswordLogin;
-    document.getElementById("go-register").onclick = showRegister;
+    document.getElementById("tab-wx").onclick = function(){ showLogin("wechat"); };
+    if (tab==="password") {
+      document.getElementById("lp-btn").onclick = doPasswordLogin;
+      document.getElementById("go-register").onclick = showRegister;
+    }
     if (tab==="code") {
       document.getElementById("lc-btn").onclick = doCodeLogin;
       document.getElementById("lc-send").onclick = sendCode;
+    }
+    if (tab==="wechat") {
+      startWechatLogin();
     }
   }
   function loginPwdHtml() {
@@ -126,6 +133,56 @@ checkAuth();
       '<button id="lc-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
       '<div id="lc-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
     '</div>';
+  }
+  function loginWechatHtml() {
+    return '<div id="login-wechat" style="text-align:center">' +
+      '<div id="wx-qr-wrap" style="width:220px;height:220px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px">' +
+        '<span id="wx-qr-loading" style="color:#94a3b8;font-size:13px">加载二维码中...</span>' +
+        '<img id="wx-qr" alt="微信扫码" style="width:200px;height:200px;display:none" />' +
+      '</div>' +
+      '<p style="margin:0 0 6px;color:#94a3b8;font-size:13px">使用微信扫码关注「仙宝心灵成长」即可登录</p>' +
+      '<p style="margin:0;color:#64748b;font-size:12px">已关注用户扫码后自动登录</p>' +
+      '<div id="wx-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
+    '</div>';
+  }
+  var wechatTimer = null;
+  function stopWechatTimer() { if (wechatTimer) { clearInterval(wechatTimer); wechatTimer = null; } }
+  function startWechatLogin() {
+    stopWechatTimer();
+    var errEl = document.getElementById("wx-err");
+    var loadingEl = document.getElementById("wx-qr-loading");
+    var imgEl = document.getElementById("wx-qr");
+    if (errEl) errEl.style.display = "none";
+    api("/wechat/qrcode", { method: "POST" }).then(function(res) {
+      if (!res.success) {
+        if (loadingEl) loadingEl.textContent = "获取二维码失败";
+        if (errEl) { errEl.textContent = res.error || "获取二维码失败"; errEl.style.display = "block"; }
+        return;
+      }
+      if (loadingEl) loadingEl.style.display = "none";
+      if (imgEl) { imgEl.src = res.data.img; imgEl.style.display = "block"; }
+      var sid = res.data.sid;
+      var tried = 0;
+      wechatTimer = setInterval(function() {
+        tried++;
+        if (tried > 60) { stopWechatTimer(); if (errEl) { errEl.textContent = "二维码已过期，请关闭重试"; errEl.style.display = "block"; } return; }
+        api("/wechat/status?sid=" + sid).then(function(r2) {
+          if (r2.pending) return;
+          stopWechatTimer();
+          if (r2.success) {
+            state.loggedIn = true;
+            state.user = r2.data.user;
+            render();
+            closeModal();
+          } else {
+            if (errEl) { errEl.textContent = r2.error || "登录失败"; errEl.style.display = "block"; }
+          }
+        }).catch(function(){});
+      }, 2000);
+    }).catch(function() {
+      if (loadingEl) loadingEl.textContent = "网络错误";
+      if (errEl) { errEl.textContent = "网络错误，请重试"; errEl.style.display = "block"; }
+    });
   }
   function showErr(id, msg) {
     var el = document.getElementById(id);

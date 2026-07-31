@@ -63,3 +63,15 @@ CREATE INDEX IF NOT EXISTS idx_user_logs_created_at ON user_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_user_logs_action ON user_logs(action);
 CREATE INDEX IF NOT EXISTS idx_usage_user_id ON usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_service ON usage(service);
+
+-- 用户绑定（微信/QQ/手机）
+CREATE TABLE IF NOT EXISTS user_bindings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    provider VARCHAR(20) NOT NULL,
+    identifier VARCHAR(200) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_user_bindings_user ON user_bindings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_bindings_provider ON user_bindings(provider, identifier);

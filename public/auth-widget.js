@@ -3,6 +3,7 @@
  */
 (function(w){
   var AUTH = "https://auth.xianbao.online";
+  var isWechat = /MicroMessenger/i.test(navigator.userAgent);
   var state = { loggedIn: false, user: null, initEl: null, _ready: false, _readyCbs: [], _authChangeCbs: [] };
 checkAuth();
   function api(path, opts) {
@@ -110,7 +111,14 @@ checkAuth();
       document.getElementById("lc-send").onclick = sendCode;
     }
     if (tab==="wechat") {
-      startWechatLogin();
+      if (isWechat) {
+        var ob = document.getElementById("wx-oauth-btn");
+        if (ob) ob.onclick = function() {
+          location.href = "https://auth.xianbao.online/wechat/oauth-authorize?returnUrl=" + encodeURIComponent(location.href);
+        };
+      } else {
+        startWechatLogin();
+      }
     }
   }
   function loginPwdHtml() {
@@ -135,6 +143,14 @@ checkAuth();
     '</div>';
   }
   function loginWechatHtml() {
+    if (isWechat) {
+      return '<div id="login-wechat" style="text-align:center">' +
+        '<div style="width:64px;height:64px;margin:0 auto 12px;border-radius:14px;background:linear-gradient(135deg,#07c160,#06ad56);display:flex;align-items:center;justify-content:center;font-size:32px">&#128172;</div>' +
+        '<button id="wx-oauth-btn" style="width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#07c160,#06ad56);color:#fff;font-size:15px;font-weight:600;cursor:pointer">微信一键登录</button>' +
+        '<p style="margin:10px 0 0;color:#64748b;font-size:12px">授权后将使用你的微信头像和昵称</p>' +
+        '<div id="wx-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
+      '</div>';
+    }
     return '<div id="login-wechat" style="text-align:center">' +
       '<div id="wx-qr-wrap" style="width:220px;height:220px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px">' +
         '<span id="wx-qr-loading" style="color:#94a3b8;font-size:13px">加载二维码中...</span>' +

@@ -1,9 +1,11 @@
 /**
- * 微信服务号 扫码关注登录
- * - GET  /wechat/callback         微信服务器验证（echostr）
- * - POST /wechat/callback         接收关注/扫码事件
- * - POST /api/auth/wechat/qrcode  生成带参临时二维码
- * - GET  /api/auth/wechat/status  前端轮询登录状态
+ * 微信服务号 扫码关注登录 + 微信内OAuth授权登录
+ * - GET  /wechat/callback          微信服务器验证（echostr）
+ * - POST /wechat/callback          接收关注/扫码事件
+ * - POST /api/auth/wechat/qrcode   生成带参临时二维码（桌面扫码关注）
+ * - GET  /api/auth/wechat/status   前端轮询登录状态
+ * - GET  /wechat/oauth-authorize   微信内 OAuth 授权跳转（snsapi_userinfo）
+ * - GET  /wechat/oauth-callback    OAuth 回调：code换token→建账号→跳回原页面
  */
 const express = require('express');
 const router = express.Router();
@@ -15,9 +17,19 @@ const { generateToken, setTokenCookie } = require('../middleware/auth');
 const APPID = process.env.WECHAT_APPID;
 const SECRET = process.env.WECHAT_SECRET;
 const TOKEN = process.env.WECHAT_TOKEN || 'xianbao2026';
+const BASE_URL = 'https://auth.xianbao.online';
+// 允许跳回的白名单域名（防开放重定向）
+const ALLOWED_RETURN_HOSTS = [
+  'xianbao.online', 'www.xianbao.online',
+  'auth.xianbao.online', 'read.xianbao.online',
+  'maya.xianbao.online', 'ceping.xianbao.online',
+  'tarot.xianbao.online'
+];
 
-// 登录会话：sid -> { userId, expires }
+// 扫码登录会话：sid -> { userId, openid, expires }
 const sessions = new Map();
+// OAuth state：state -> { returnUrl, expires }
+const oauthStates = new Map();
 // access_token 缓存
 let cachedToken = { value: null, expires: 0 };
 
@@ -52,6 +64,35 @@ function createQrcode(sceneStr) {
   }).then(function(r) { return r.json(); });
 }
 
+/** 用 OAuth code 换 access_token（微信内授权） */
+function getOauthToken(code) {
+  const url = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${APPID}&secret=${SECRET}&code=${code}&grant_type=authorization_code`;
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+/** 获取微信用户信息（OAuth 授权后，含昵称头像） */
+function getWechatUserInfo(accessToken, openid) {
+  const url = `https://api.weixin.qq.com/sns/userinfo?access_token=${accessToken}&openid=${openid}&lang=zh_CN`;
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+/** 获取已关注用户信息（桌面扫码后，cgi-bin 接口） */
+function getFollowedUserInfo(openid) {
+  return getAccessToken().then(function(token) {
+    return fetch(`https://api.weixin.qq.com/cgi-bin/user/info?access_token=${token}&openid=${openid}&lang=zh_CN`);
+  }).then(function(r) { return r.json(); });
+}
+
+/** 校验 returnUrl 只允许白名单域名 */
+function isValidReturnUrl(url) {
+  try {
+    const u = new URL(url);
+    return ALLOWED_RETURN_HOSTS.includes(u.hostname);
+  } catch (e) {
+    return false;
+  }
+}
+
 /* 解析微信 XML（CDATA + 纯文本） */
 function parseWechatXml(xml) {
   const result = {};
@@ -63,27 +104,35 @@ function parseWechatXml(xml) {
   return result;
 }
 
-/* 根据 openid 查绑定，无则创建微信用户 */
-async function findOrCreateUser(openid) {
+/* 根据 openid 查绑定；无则创建微信用户。有昵称头像则覆盖 users 表 */
+async function findOrCreateUser(openid, nickname, avatar) {
   const bind = await db.get(
     "SELECT user_id FROM user_bindings WHERE provider = 'wechat' AND identifier = ?",
     [openid]
   );
   if (bind) {
-    return db.get('SELECT id, username, email, nickname, role, plan FROM users WHERE id = ?', [bind.user_id]);
+    // 已绑定：有昵称/头像则覆盖（微信身份为准）
+    if (nickname || avatar) {
+      await db.run(
+        'UPDATE users SET nickname = COALESCE(?, nickname), avatar_url = COALESCE(?, avatar_url), updated_at = datetime("now") WHERE id = ?',
+        [nickname || null, avatar || null, bind.user_id]
+      );
+    }
+    return db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [bind.user_id]);
   }
   const username = 'wx_' + openid;
   const email = username + '@wechat.local';
   const hash = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10);
+  const displayName = nickname || '微信用户';
   const r = await db.run(
-    'INSERT INTO users (username, email, password_hash, nickname, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
-    [username, email, hash, '微信用户']
+    'INSERT INTO users (username, email, password_hash, nickname, avatar_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
+    [username, email, hash, displayName, avatar || null]
   );
   await db.run(
     "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
     [r.lastID, openid]
   );
-  return db.get('SELECT id, username, email, nickname, role, plan FROM users WHERE id = ?', [r.lastID]);
+  return db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
 }
 
 /* ===== 1. 微信服务器验证 ===== */
@@ -111,7 +160,14 @@ router.post('/wechat/callback', (req, res) => {
         if (sid.startsWith('qrscene_')) sid = sid.substring(8);
         const session = sessions.get(sid);
         if (session && Date.now() < session.expires) {
-          const user = await findOrCreateUser(msg.FromUserName);
+          // 尝试获取昵称头像（仅关注用户可拿到，失败不影响登录）
+          let nickname = '', avatar = '';
+          try {
+            const ui = await getFollowedUserInfo(msg.FromUserName);
+            if (ui && ui.nickname) nickname = ui.nickname;
+            if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
+          } catch (e) {}
+          const user = await findOrCreateUser(msg.FromUserName, nickname, avatar);
           session.userId = user.id;
           session.openid = msg.FromUserName;
         }
@@ -124,7 +180,7 @@ router.post('/wechat/callback', (req, res) => {
   });
 });
 
-/* ===== 3. 生成带参二维码 ===== */
+/* ===== 3. 生成带参二维码（桌面扫码关注登录） ===== */
 router.post('/api/auth/wechat/qrcode', async (req, res) => {
   try {
     if (!APPID || !SECRET) {
@@ -151,7 +207,7 @@ router.post('/api/auth/wechat/qrcode', async (req, res) => {
   }
 });
 
-/* ===== 4. 轮询登录状态 ===== */
+/* ===== 4. 轮询登录状态（桌面扫码） ===== */
 router.get('/api/auth/wechat/status', async (req, res) => {
   try {
     const sid = req.query.sid;
@@ -162,7 +218,7 @@ router.get('/api/auth/wechat/status', async (req, res) => {
     if (!session.userId) {
       return res.json({ success: false, pending: true });
     }
-    const user = await db.get('SELECT id, username, email, nickname, role, plan FROM users WHERE id = ?', [session.userId]);
+    const user = await db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [session.userId]);
     if (!user) {
       return res.json({ success: false, error: '用户不存在' });
     }
@@ -176,5 +232,59 @@ router.get('/api/auth/wechat/status', async (req, res) => {
   }
 });
 
-module.exports = router;
+/* ===== 5. 微信内 OAuth 授权跳转 ===== */
+router.get('/wechat/oauth-authorize', (req, res) => {
+  const returnUrl = req.query.returnUrl || 'https://xianbao.online/';
+  if (!isValidReturnUrl(returnUrl)) {
+    return res.status(400).send('无效的跳转地址');
+  }
+  const state = crypto.randomBytes(8).toString('hex');
+  oauthStates.set(state, { returnUrl, expires: Date.now() + 600000 });
+  const redirect = 'https://open.weixin.qq.com/connect/oauth2/authorize' +
+    '?appid=' + APPID +
+    '&redirect_uri=' + encodeURIComponent(BASE_URL + '/wechat/oauth-callback') +
+    '&response_type=code' +
+    '&scope=snsapi_userinfo' +
+    '&state=' + state +
+    '#wechat_redirect';
+  res.redirect(redirect);
+});
 
+/* ===== 6. 微信内 OAuth 回调 ===== */
+router.get('/wechat/oauth-callback', async (req, res) => {
+  const { code, state } = req.query;
+  const st = oauthStates.get(state);
+  if (!st || Date.now() > st.expires) {
+    return res.redirect('https://xianbao.online/?login=expired');
+  }
+  oauthStates.delete(state);
+  if (!code) {
+    return res.redirect(st.returnUrl + (st.returnUrl.includes('?') ? '&' : '?') + 'login=fail');
+  }
+  try {
+    // code 换 access_token + openid
+    const j = await getOauthToken(code);
+    if (!j.openid) {
+      console.error('OAuth code 换 token 失败:', j.errmsg || j.errcode);
+      return res.redirect(st.returnUrl + (st.returnUrl.includes('?') ? '&' : '?') + 'login=fail');
+    }
+    // 获取用户信息（昵称头像）
+    let nickname = '', avatar = '';
+    try {
+      const ui = await getWechatUserInfo(j.access_token, j.openid);
+      if (ui && ui.nickname) nickname = ui.nickname;
+      if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
+    } catch (e) {}
+    // 查绑定/创建 + 覆盖昵称头像
+    const user = await findOrCreateUser(j.openid, nickname, avatar);
+    const token = generateToken(user);
+    setTokenCookie(res, token);
+    // 跳回原页面
+    res.redirect(st.returnUrl);
+  } catch (e) {
+    console.error('微信 OAuth 登录失败:', e);
+    res.redirect(st.returnUrl + (st.returnUrl.includes('?') ? '&' : '?') + 'login=fail');
+  }
+});
+
+module.exports = router;

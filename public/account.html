@@ -247,7 +247,8 @@ function startWechatBind(){
         if(r2.success&&r2.data&&r2.data.bound){
           document.getElementById('wxBindStatus').textContent='已绑定';
           document.getElementById('wxBindBtn').style.display='none';
-          showToast('微信绑定成功');
+          if(r2.data.already){showToast('该微信已绑定当前账号');}
+          else{showToast('微信绑定成功');}
         } else if(!r2.success){
           if(btn)btn.disabled=false;
           showToast(r2.error||'绑定失败','err');

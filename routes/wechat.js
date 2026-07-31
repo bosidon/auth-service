@@ -161,7 +161,7 @@ router.post('/wechat/callback', (req, res) => {
         const session = sessions.get(sid);
         if (session && Date.now() < session.expires) {
           if (session.bindMode && session.userId) {
-            // 绑定模式：openid 关联到当前登录用户（不新建）
+            // 绑定模式：检查该微信是否已绑定账号
             const exist = await db.get(
               "SELECT user_id FROM user_bindings WHERE provider = 'wechat' AND identifier = ?",
               [msg.FromUserName]
@@ -171,6 +171,11 @@ router.post('/wechat/callback', (req, res) => {
                 "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
                 [session.userId, msg.FromUserName]
               );
+              session.bindResult = 'bound';
+            } else if (exist.user_id === session.userId) {
+              session.bindResult = 'already';   // 已绑定当前账号
+            } else {
+              session.bindResult = 'conflict';  // 已绑定其他账号，拒绝
             }
             session.openid = msg.FromUserName;
           } else {
@@ -239,8 +244,14 @@ router.get('/api/auth/wechat/status', async (req, res) => {
       return res.json({ success: false, pending: true });
     }
     if (session.bindMode) {
-      // 绑定模式：不登录，只返回绑定成功
+      // 绑定模式：不登录，只返回绑定结果
       sessions.delete(sid);
+      if (session.bindResult === 'conflict') {
+        return res.json({ success: false, error: '该微信已绑定其他账号' });
+      }
+      if (session.bindResult === 'already') {
+        return res.json({ success: true, data: { bound: true, already: true } });
+      }
       return res.json({ success: true, data: { bound: true } });
     }
     const user = await db.get('SELECT id, username, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [session.userId]);

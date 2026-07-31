@@ -74,4 +74,4 @@ CREATE TABLE IF NOT EXISTS user_bindings (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_user_bindings_user ON user_bindings(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_bindings_provider ON user_bindings(provider, identifier);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_bindings_provider ON user_bindings(provider, identifier);

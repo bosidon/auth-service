@@ -36,6 +36,9 @@ router.get('/wechat/subscribe-authorize', authenticateToken, async (req, res) =>
       return res.status(400).json({ success: false, error: '请先绑定微信' });
     }
     const sid = crypto.randomBytes(8).toString('hex');
+    // scene 必须为数字（微信 H5 订阅通知要求）
+    const sceneMap = { tarot: 1001, test: 1002, maya: 1003, energy: 1004 };
+    const sceneNum = sceneMap[scene] || 1001;
     grantSessions.set(sid, {
       openid: bind.identifier,
       templateId: template_id,
@@ -45,10 +48,12 @@ router.get('/wechat/subscribe-authorize', authenticateToken, async (req, res) =>
     });
     const redirect = 'https://mp.weixin.qq.com/mp/subscribemsg?action=get_confirm'
       + '&appid=' + encodeURIComponent(APPID)
-      + '&scene=' + encodeURIComponent(scene || 'default')
+      + '&scene=' + sceneNum
       + '&template_id=' + encodeURIComponent(template_id)
       + '&redirect_url=' + encodeURIComponent('https://auth.xianbao.online/wechat/subscribe-callback?sid=' + sid)
       + '#wechat_redirect';
+    console.log('[subscribe-authorize] openid=' + bind.identifier.slice(0, 8) + ' scene=' + sceneNum + ' tpl=' + template_id.slice(0, 8));
+    console.log('[subscribe-authorize] redirect=' + redirect.slice(0, 160));
     res.redirect(redirect);
   } catch (e) {
     console.error('订阅授权跳转失败:', e);
@@ -144,5 +149,36 @@ async function getAccessToken() {
   cachedTokenExpires = Date.now() + (j.expires_in - 300) * 1000;
   return cachedToken;
 }
+
+// ===== 4. JS-SDK 签名（wx.config 用） =====
+let cachedTicket = null;
+let cachedTicketExpires = 0;
+
+async function getJsapiTicket() {
+  if (cachedTicket && Date.now() < cachedTicketExpires) return cachedTicket;
+  const token = await getAccessToken();
+  const r = await fetch(`https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${token}&type=jsapi`);
+  const j = await r.json();
+  if (j.errcode !== 0) throw new Error('jsapi_ticket获取失败: ' + (j.errmsg || ''));
+  cachedTicket = j.ticket;
+  cachedTicketExpires = Date.now() + (j.expires_in - 300) * 1000;
+  return cachedTicket;
+}
+
+router.get('/api/auth/wechat/jssdk-config', async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).json({ success: false, error: '缺少url参数' });
+    const ticket = await getJsapiTicket();
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonceStr = Math.random().toString(36).substr(2, 15);
+    const str = `jsapi_ticket=${ticket}&noncestr=${nonceStr}&timestamp=${timestamp}&url=${url}`;
+    const signature = crypto.createHash('sha1').update(str).digest('hex');
+    res.json({ success: true, data: { appId: APPID, timestamp, nonceStr, signature } });
+  } catch (e) {
+    console.error('JS-SDK签名失败:', e);
+    res.status(500).json({ success: false, error: '签名失败' });
+  }
+});
 
 module.exports = router;

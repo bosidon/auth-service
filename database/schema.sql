@@ -74,15 +74,3 @@ CREATE TABLE IF NOT EXISTS user_bindings (
 );
 CREATE INDEX IF NOT EXISTS idx_user_bindings_user ON user_bindings(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_bindings_provider ON user_bindings(provider, identifier);
-
--- 微信订阅通知授权记录
-CREATE TABLE IF NOT EXISTS wechat_subscribe_grants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    openid VARCHAR(100) NOT NULL,
-    template_id VARCHAR(100) NOT NULL,
-    scene VARCHAR(50) DEFAULT '',
-    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    used INTEGER DEFAULT 0,
-    used_at DATETIME
-);
-CREATE INDEX IF NOT EXISTS idx_grants_openid ON wechat_subscribe_grants(openid, template_id);

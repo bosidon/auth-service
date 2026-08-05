@@ -288,7 +288,8 @@ function bmWxBind(){
   api('/auth/wechat/qrcode?bind=1',{}).then(function(d){
     if(!d.success){qr.innerHTML='<p style="color:#f87171">'+(d.error||'获取二维码失败')+'</p>';return}
     var sid=d.data.sid;
-    qr.innerHTML='<img src="'+d.data.qr+'" style="width:200px;height:200px;border-radius:8px">';
+    var qrUrl='https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket='+encodeURIComponent(d.data.ticket);
+    qr.innerHTML='<img src="'+qrUrl+'" style="width:200px;height:200px;border-radius:8px">';
     if(wxBindTimer)clearInterval(wxBindTimer);
     wxBindTimer=setInterval(function(){
       api('/auth/wechat/status?sid='+sid).then(function(r2){

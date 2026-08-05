@@ -57,20 +57,22 @@ router.post('/register', async (req, res) => {
 // ===== 登录 =====
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, phone } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: '请填写邮箱和密码' });
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ success: false, error: '请填写账号和密码' });
     }
 
-    const user = await db.get('SELECT id, email, nickname, role, password_hash FROM users WHERE email = ?', [email]);
+    const user = phone
+      ? await db.get('SELECT id, email, nickname, role, password_hash FROM users WHERE phone = ?', [phone])
+      : await db.get('SELECT id, email, nickname, role, password_hash FROM users WHERE email = ?', [email]);
 
     if (!user) {
-      return res.status(401).json({ success: false, error: '邮箱或密码错误' });
+      return res.status(401).json({ success: false, error: '账号或密码错误' });
     }
 
     if (!bcrypt.compareSync(password, user.password_hash)) {
-      return res.status(401).json({ success: false, error: '邮箱或密码错误' });
+      return res.status(401).json({ success: false, error: '账号或密码错误' });
     }
 
     const token = generateToken(user);
@@ -145,6 +147,32 @@ router.post('/bind-phone', authenticateToken, async (req, res) => {
   }
 });
 
+// 绑定邮箱（需邮箱验证码校验）
+router.post('/bind-email', authenticateToken, async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) return res.json({ success: false, error: '请填写邮箱和验证码' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.json({ success: false, error: '邮箱格式不正确' });
+    // 校验验证码
+    const validCode = await db.get(
+      `SELECT id, code, expires_at, used FROM email_codes WHERE email = ? ORDER BY created_at DESC LIMIT 1`,
+      [email]
+    );
+    if (!validCode) return res.json({ success: false, error: '请先获取验证码' });
+    if (validCode.used) return res.json({ success: false, error: '验证码已使用' });
+    if (new Date(validCode.expires_at) < new Date()) return res.json({ success: false, error: '验证码已过期，请重新获取' });
+    if (validCode.code !== code) return res.json({ success: false, error: '验证码错误' });
+    await db.run('UPDATE email_codes SET used = 1 WHERE id = ?', [validCode.id]);
+    // 邮箱唯一检查（排除自己）
+    const exist = await db.get('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.id]);
+    if (exist) return res.json({ success: false, error: '该邮箱已被其他账号使用' });
+    await db.run('UPDATE users SET email = ?, updated_at = datetime("now") WHERE id = ?', [email, req.user.id]);
+    res.json({ success: true, data: { email } });
+  } catch (e) {
+    res.json({ success: false, error: '绑定失败' });
+  }
+});
+
 router.post('/change-password', authenticateToken, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -182,6 +210,55 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     );
 
     res.json({ success: true, data: { message: '密码修改成功' } });
+  } catch (error) {
+    console.error('修改密码失败:', error);
+    res.status(500).json({ success: false, error: '服务器错误' });
+  }
+});
+
+// ===== 验证码修改/设置密码（已登录，方案B：验证码验证后直接设新密码） =====
+router.post('/change-password-code', authenticateToken, async (req, res) => {
+  try {
+    const { phone, email, code, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, error: '密码至少6位' });
+    }
+    // 校验验证码（手机号或邮箱）
+    if (phone) {
+      const validCode = await db.get(
+        `SELECT id, code, expires_at, used FROM sms_codes WHERE phone = ? ORDER BY created_at DESC LIMIT 1`,
+        [phone]
+      );
+      if (!validCode) return res.json({ success: false, error: '请先获取验证码' });
+      if (validCode.used) return res.json({ success: false, error: '验证码已使用' });
+      if (new Date(validCode.expires_at) < new Date()) return res.json({ success: false, error: '验证码已过期，请重新获取' });
+      if (validCode.code !== code) return res.json({ success: false, error: '验证码错误' });
+      await db.run('UPDATE sms_codes SET used = 1 WHERE id = ?', [validCode.id]);
+    } else if (email) {
+      const validCode = await db.get(
+        `SELECT id, code, expires_at, used FROM email_codes WHERE email = ? ORDER BY created_at DESC LIMIT 1`,
+        [email]
+      );
+      if (!validCode) return res.json({ success: false, error: '请先获取验证码' });
+      if (validCode.used) return res.json({ success: false, error: '验证码已使用' });
+      if (new Date(validCode.expires_at) < new Date()) return res.json({ success: false, error: '验证码已过期，请重新获取' });
+      if (validCode.code !== code) return res.json({ success: false, error: '验证码错误' });
+      await db.run('UPDATE email_codes SET used = 1 WHERE id = ?', [validCode.id]);
+    } else {
+      return res.json({ success: false, error: '请提供手机号或邮箱' });
+    }
+    // 设置新密码
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(newPassword, salt);
+    await db.run(
+      'UPDATE users SET password_hash = ?, updated_at = datetime("now") WHERE id = ?',
+      [hash, req.user.id]
+    );
+    await db.run(
+      'INSERT INTO user_logs (user_id, action, detail, ip, user_agent) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'change_password', JSON.stringify({ method: 'code' }), req.ip, req.headers['user-agent'] || '']
+    );
+    res.json({ success: true, data: { message: '密码已更新' } });
   } catch (error) {
     console.error('修改密码失败:', error);
     res.status(500).json({ success: false, error: '服务器错误' });

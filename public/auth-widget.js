@@ -123,7 +123,7 @@ checkAuth();
   }
   function loginPwdHtml() {
     return '<div id="login-pwd">' +
-      '<input id="lp-email" placeholder="邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
+      '<input id="lp-email" placeholder="手机号/邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
       '<input id="lp-pwd" type="password" placeholder="密码" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:16px;box-sizing:border-box">' +
       '<button id="lp-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
       '<div id="lp-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
@@ -205,10 +205,11 @@ checkAuth();
     if (el) { el.textContent = msg; el.style.display = "block"; }
   }
   function doPasswordLogin() {
-    var email = document.getElementById("lp-email").value;
+    var account = document.getElementById("lp-email").value.trim();
     var pwd = document.getElementById("lp-pwd").value;
-    if (!email || !pwd) { showErr("lp-err", "请填写完整"); return; }
-    api("/login", { method: "POST", body: { email: email, password: pwd } }).then(function(res){
+    if (!account || !pwd) { showErr("lp-err", "请填写完整"); return; }
+    var body = /^1[3-9]\d{9}$/.test(account) ? { phone: account, password: pwd } : { email: account, password: pwd };
+    api("/login", { method: "POST", body: body }).then(function(res){
       if (res.success) { closeModal(); checkAuth(); }
       else { showErr("lp-err", res.error || "登录失败"); }
     });

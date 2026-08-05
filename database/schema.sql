@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS email_codes (
 );
 CREATE INDEX IF NOT EXISTS idx_email_codes_email ON email_codes(email);
 
+-- 手机短信验证码
+CREATE TABLE IF NOT EXISTS sms_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone VARCHAR(20) NOT NULL,
+    code VARCHAR(6) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_sms_codes_phone ON sms_codes(phone);
+
 -- 系统设置
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,

@@ -119,14 +119,6 @@ router.post('/upload-avatar', authenticateToken, upLoader.single('avatar'), asyn
   await db.run('UPDATE users SET avatar_url = ?, updated_at = datetime("now") WHERE id = ?', [url, req.user.id]);
   res.json({ success: true, data: { url: url } });
 });
-// 发送手机验证码（演示模式）
-router.post('/send-phone-code', authenticateToken, async (req, res) => {
-  const { phone } = req.body;
-  if (!phone || phone.length < 11) return res.json({ success: false, error: '请输入正确手机号' });
-  // TODO: 接入真实SMS通道
-  res.json({ success: true, message: '验证码已发送（演示模式）' });
-});
-
 // 绑定手机号
 router.post('/bind-phone', authenticateToken, async (req, res) => {
   try {

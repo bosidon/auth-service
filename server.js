@@ -53,6 +53,7 @@ initDatabase();
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth', require('./routes/email-code'));
+app.use('/api/auth', require('./routes/sms-code'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/usage', require('./routes/usage'));
 app.use('/api/vip', require('./routes/vip'));

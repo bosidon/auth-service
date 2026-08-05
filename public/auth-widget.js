@@ -133,7 +133,7 @@ checkAuth();
   }
   function loginCodeHtml() {
     return '<div id="login-code">' +
-      '<input id="lc-email" placeholder="邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
+      '<input id="lc-phone" placeholder="手机号" type="tel" maxlength="11" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
       '<div style="display:flex;gap:8px;margin-bottom:16px">' +
         '<input id="lc-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">' +
         '<button id="lc-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap">发送</button>' +
@@ -214,19 +214,34 @@ checkAuth();
     });
   }
   function doCodeLogin() {
-    var email = document.getElementById("lc-email").value;
+    var phone = document.getElementById("lc-phone").value;
     var code = document.getElementById("lc-code").value;
-    if (!email || !code) { showErr("lc-err", "请填写完整"); return; }
-    api("/login-code", { method: "POST", body: { email: email, code: code } }).then(function(res){
+    if (!phone || !code) { showErr("lc-err", "请填写完整"); return; }
+    if (!/^1[3-9]\d{9}$/.test(phone)) { showErr("lc-err", "手机号格式不正确"); return; }
+    api("/login-with-phone", { method: "POST", body: { phone: phone, code: code } }).then(function(res){
       if (res.success) { closeModal(); checkAuth(); }
       else { showErr("lc-err", res.error || "登录失败"); }
     });
   }
   function sendCode() {
-    var email = document.getElementById("lc-email").value;
-    if (!email) { showErr("lc-err", "请输入邮箱"); return; }
-    api("/send-code", { method: "POST", body: { email: email } }).then(function(res){
-      showErr("lc-err", res.success ? "验证码已发送" : (res.error || "发送失败"));
+    var phone = document.getElementById("lc-phone").value;
+    if (!phone) { showErr("lc-err", "请输入手机号"); return; }
+    if (!/^1[3-9]\d{9}$/.test(phone)) { showErr("lc-err", "手机号格式不正确"); return; }
+    api("/send-phone-code", { method: "POST", body: { phone: phone } }).then(function(res){
+      if (res.success) {
+        showErr("lc-err", "验证码已发送");
+        var btn = document.getElementById("lc-send");
+        var n = 60;
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        var timer = setInterval(function(){
+          n--;
+          btn.textContent = n + "s";
+          if (n <= 0) { clearInterval(timer); btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "发送"; }
+        }, 1000);
+      } else {
+        showErr("lc-err", res.error || "发送失败");
+      }
     });
   }
   function showRegister() {

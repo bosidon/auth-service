@@ -119,13 +119,25 @@ router.post('/upload-avatar', authenticateToken, upLoader.single('avatar'), asyn
   await db.run('UPDATE users SET avatar_url = ?, updated_at = datetime("now") WHERE id = ?', [url, req.user.id]);
   res.json({ success: true, data: { url: url } });
 });
-// 绑定手机号
+// 绑定手机号（需验证码校验）
 router.post('/bind-phone', authenticateToken, async (req, res) => {
   try {
-    const { phone } = req.body;
-    if (!phone) return res.json({ success: false, error: '请输入手机号' });
-    const exist = await db.get('SELECT id FROM users WHERE phone = ?', [phone]);
-    if (exist) return res.json({ success: false, error: '该手机号已被绑定' });
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.json({ success: false, error: '请填写手机号和验证码' });
+    if (!/^1[3-9]\d{9}$/.test(phone)) return res.json({ success: false, error: '手机号格式不正确' });
+    // 校验验证码
+    const validCode = await db.get(
+      `SELECT id, code, expires_at, used FROM sms_codes WHERE phone = ? ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    );
+    if (!validCode) return res.json({ success: false, error: '请先获取验证码' });
+    if (validCode.used) return res.json({ success: false, error: '验证码已使用' });
+    if (new Date(validCode.expires_at) < new Date()) return res.json({ success: false, error: '验证码已过期，请重新获取' });
+    if (validCode.code !== code) return res.json({ success: false, error: '验证码错误' });
+    await db.run('UPDATE sms_codes SET used = 1 WHERE id = ?', [validCode.id]);
+    // 检查手机号是否被其他账号占用
+    const exist = await db.get('SELECT id FROM users WHERE phone = ? AND id != ?', [phone, req.user.id]);
+    if (exist) return res.json({ success: false, error: '该手机号已被其他账号绑定' });
     await db.run('UPDATE users SET phone = ?, updated_at = datetime("now") WHERE id = ?', [phone, req.user.id]);
     res.json({ success: true, data: { phone } });
   } catch (e) {

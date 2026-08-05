@@ -210,11 +210,17 @@ function saveField(field){
 
 function sendPhoneCode(){
   var phone=document.getElementById('bindPhone').value;
-  if(!phone||phone.length<11){showToast('请输入正确手机号','err');return}
+  if(!phone||!/^1[3-9]\d{9}$/.test(phone)){showToast('请输入正确手机号','err');return}
   var btn=document.getElementById('sendPhoneBtn');btn.disabled=true;
   api('/auth/send-phone-code',{phone:phone}).then(function(d){
-    showToast(d.success?'验证码已发送（演示模式）':(d.error||'发送失败'),d.success?'ok':'err');
-    if(!d.success)btn.disabled=false;
+    showToast(d.success?'验证码已发送':(d.error||'发送失败'),d.success?'ok':'err');
+    if(!d.success){btn.disabled=false;return}
+    var n=60;
+    var ot=btn.innerText;
+    var timer=setInterval(function(){
+      n--;btn.innerText=n+'s';
+      if(n<=0){clearInterval(timer);btn.disabled=false;btn.innerText=ot}
+    },1000);
   });
 }
 
@@ -262,7 +268,7 @@ function bindPhone(){
   var phone=document.getElementById('bindPhone').value;
   var code=document.getElementById('phoneCode').value;
   if(!phone||!code){showToast('请填写完整','err');return}
-  api('/auth/bind-phone',{phone:phone}).then(function(d){
+  api('/auth/bind-phone',{phone:phone,code:code}).then(function(d){
     if(d.success){document.getElementById('infoPhone').textContent=phone;showToast('手机号已绑定')}
     else showToast(d.error||'绑定失败','err');
   });

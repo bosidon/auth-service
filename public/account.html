@@ -39,6 +39,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 .binding-icon.qq{background:rgba(18,183,245,.15);color:#12b7f5}
 .binding-icon.wechat{background:rgba(7,193,96,.15);color:#07c160}
 .binding-icon.phone{background:rgba(59,130,246,.15);color:#3b82f6}
+.binding-icon.email{background:rgba(244,63,94,.15);color:#f43f5e}
 .binding-name{font-size:0.88rem}
 .binding-status{font-size:0.75rem;color:#6b7280}
 .vip-row{display:flex;align-items:center;justify-content:space-between}
@@ -93,16 +94,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
     </div>
   </div>
 
-  <!-- 绑定手机号 -->
+  <!-- 账号绑定 -->
   <div class="card">
-    <div class="card-title">📱 绑定手机号</div>
-    <div class="row" style="display:flex;gap:8px;margin-bottom:8px">
-      <input type="text" id="bindPhone" class="input" placeholder="手机号" style="flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none">
-      <button class="btn btn-outline btn-sm" id="sendPhoneBtn" onclick="sendPhoneCode()">获取验证码</button>
+    <div class="card-title">🔗 账号绑定</div>
+    <div class="binding-item">
+      <div class="binding-left"><div class="binding-icon phone">📱</div><div><div class="binding-name">手机号</div><div class="binding-status" id="bindPhoneVal">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" id="phoneBindBtn" onclick="openBindModal('phone')">绑定</button>
     </div>
-    <div class="row" style="display:flex;gap:8px">
-      <input type="text" id="phoneCode" placeholder="验证码" style="flex:1;padding:8px 12px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:0.88rem;outline:none">
-      <button class="btn btn-primary btn-sm" onclick="bindPhone()">绑定</button>
+    <div class="binding-item">
+      <div class="binding-left"><div class="binding-icon email">✉️</div><div><div class="binding-name">邮箱</div><div class="binding-status" id="bindEmailVal">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" id="emailBindBtn" onclick="openBindModal('email')">绑定</button>
+    </div>
+    <div class="binding-item">
+      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wxBindStatus">未绑定</div></div></div>
+      <button class="btn btn-outline btn-sm" id="wxBindBtn" onclick="openBindModal('wechat')">绑定</button>
     </div>
   </div>
 
@@ -111,15 +116,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
     <div class="card-title">🔒 登录密码</div>
     <p style="font-size:0.82rem;color:#6b7280;margin-bottom:12px">重置链接将发送到你的注册邮箱</p>
     <button class="btn btn-outline btn-full" id="sendResetBtn" onclick="sendReset()">发送重置链接到邮箱</button>
-  </div>
-
-  <!-- 社交绑定 -->
-  <div class="card">
-    <div class="card-title">🔗 社交绑定</div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wxBindStatus">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" id="wxBindBtn" onclick="startWechatBind()">绑定</button>
-    </div>
   </div>
 
   <!-- VIP -->
@@ -135,6 +131,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
   </div>
 </div>
 
+<div id="bindModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeBindModal()">
+  <div style="background:#14141e;border:1px solid #1e1e2a;border-radius:16px;padding:28px;width:340px;max-width:90vw">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <span style="font-size:16px;font-weight:600;color:#e0e0e0" id="bindModalTitle">绑定</span>
+      <span onclick="closeBindModal()" style="cursor:pointer;color:#64748b;font-size:18px">&#10005;</span>
+    </div>
+    <div id="bindModalBody"></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://xianbao.online/assets/xianbao/auth-widget.js"></script>
@@ -157,6 +162,13 @@ function loadData(){
     document.getElementById('editNickname').value=(u.nickname&&u.nickname!=='微信用户')?u.nickname:'';
     loadBindings();
     document.getElementById('infoPhone').textContent=u.phone||'未绑定';
+    document.getElementById('bindPhoneVal').textContent=u.phone||'未绑定';
+    var pbtn=document.getElementById('phoneBindBtn');
+    if(u.phone){pbtn.textContent='已绑定';pbtn.disabled=true;pbtn.style.opacity=.5}
+    var emailDisp=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email&&u.email.indexOf('@sms.local')>-1)?'手机号登录':(u.email||'-');
+    document.getElementById('bindEmailVal').textContent=emailDisp;
+    var ebtn=document.getElementById('emailBindBtn');
+    if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='已绑定';ebtn.disabled=true;ebtn.style.opacity=.5}
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
     if(u.plan&&u.plan!=='free'){
@@ -208,22 +220,70 @@ function saveField(field){
   });
 }
 
-function sendPhoneCode(){
-  var phone=document.getElementById('bindPhone').value;
-  if(!phone||!/^1[3-9]\d{9}$/.test(phone)){showToast('请输入正确手机号','err');return}
-  var btn=document.getElementById('sendPhoneBtn');btn.disabled=true;
-  api('/auth/send-phone-code',{phone:phone}).then(function(d){
-    showToast(d.success?'验证码已发送':(d.error||'发送失败'),d.success?'ok':'err');
-    if(!d.success){btn.disabled=false;return}
-    var n=60;
-    var ot=btn.innerText;
-    var timer=setInterval(function(){
-      n--;btn.innerText=n+'s';
-      if(n<=0){clearInterval(timer);btn.disabled=false;btn.innerText=ot}
-    },1000);
+function openBindModal(type){
+  var title=document.getElementById('bindModalTitle');
+  var body=document.getElementById('bindModalBody');
+  if(type==='phone'){
+    title.textContent='📱 绑定手机号';
+    body.innerHTML='<input id="bm-phone" placeholder="手机号" type="tel" maxlength="11" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box">'+
+      '<div style="display:flex;gap:8px;margin-bottom:16px">'+
+        '<input id="bm-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">'+
+        '<button id="bm-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap" onclick="bmSendCode(&quot;phone&quot;)">获取验证码</button>'+
+      '</div>'+
+      '<button onclick="bmBind(&quot;phone&quot;)" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">确认绑定</button>'+
+      '<div id="bm-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>';
+  } else if(type==='email'){
+    title.textContent='✉️ 绑定邮箱';
+    body.innerHTML='<input id="bm-email" placeholder="邮箱" type="email" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box">'+
+      '<div style="display:flex;gap:8px;margin-bottom:16px">'+
+        '<input id="bm-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">'+
+        '<button id="bm-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap" onclick="bmSendCode(&quot;email&quot;)">获取验证码</button>'+
+      '</div>'+
+      '<button onclick="bmBind(&quot;email&quot;)" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">确认绑定</button>'+
+      '<div id="bm-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>';
+  } else if(type==='wechat'){
+    title.textContent='🔗 绑定微信';
+    body.innerHTML='<div id="bm-wx" style="text-align:center;padding:8px 0"><p style="color:#94a3b8;font-size:13px;margin-bottom:12px">请用微信扫码，完成绑定</p><div id="bm-wx-qr" style="min-height:220px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px">加载中...</div></div>';
+  }
+  document.getElementById('bindModal').style.display='flex';
+  if(type==='wechat') bmWxBind();
+}
+function closeBindModal(){
+  document.getElementById('bindModal').style.display='none';
+  if(wxBindTimer){clearInterval(wxBindTimer);wxBindTimer=null;}
+}
+function bmErr(m){
+  var e=document.getElementById('bm-err');
+  if(e){e.textContent=m;e.style.display=m?'block':'none';}
+}
+function bmSendCode(type){
+  var field=type==='phone'?'bm-phone':'bm-email';
+  var val=document.getElementById(field).value;
+  var ok=type==='phone'?/^1[3-9]\d{9}$/.test(val):/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  if(!ok){bmErr(type==='phone'?'请输入正确手机号':'请输入有效邮箱');return}
+  var btn=document.getElementById('bm-send');btn.disabled=true;
+  var p=type==='phone'?{phone:val}:{email:val};
+  var ep=type==='phone'?'/auth/send-phone-code':'/send-code';
+  api(ep,p).then(function(d){
+    if(!d.success){bmErr(d.error||'发送失败');btn.disabled=false;return}
+    bmErr('');
+    var n=60,ot=btn.innerText;
+    var timer=setInterval(function(){n--;btn.innerText=n+'s';if(n<=0){clearInterval(timer);btn.disabled=false;btn.innerText=ot}},1000);
   });
 }
-
+function bmBind(type){
+  var val=document.getElementById(type==='phone'?'bm-phone':'bm-email').value;
+  var code=document.getElementById('bm-code').value;
+  if(!val||!code){bmErr('请填写完整');return}
+  var p=type==='phone'?{phone:val,code:code}:{email:val,code:code};
+  var ep=type==='phone'?'/auth/bind-phone':'/auth/bind-email';
+  api(ep,p).then(function(d){
+    if(!d.success){bmErr(d.error||'绑定失败');return}
+    showToast(type==='phone'?'手机号已绑定':'邮箱已绑定');
+    closeBindModal();
+    loadData();
+  });
+}
 function loadBindings(){
   apiGet('/auth/bindings').then(function(d){
     if(!d.success||!d.data)return;
@@ -233,44 +293,29 @@ function loadBindings(){
     }
     document.getElementById('wxBindStatus').textContent=wx?'已绑定':'未绑定';
     var btn=document.getElementById('wxBindBtn');
-    if(wx){btn.style.display='none';}
+    if(wx){btn.textContent='已绑定';btn.disabled=true;btn.style.opacity=.5;}
   });
 }
-
 var wxBindTimer=null;
-function startWechatBind(){
-  var btn=document.getElementById('wxBindBtn');
-  if(btn)btn.disabled=true;
+function bmWxBind(){
+  var qr=document.getElementById('bm-wx-qr');
   api('/auth/wechat/qrcode?bind=1',{}).then(function(d){
-    if(!d.success){showToast(d.error||'获取二维码失败','err');if(btn)btn.disabled=false;return}
+    if(!d.success){qr.innerHTML='<p style="color:#f87171">'+(d.error||'获取二维码失败')+'</p>';return}
     var sid=d.data.sid;
-    showToast('请用微信扫码关注，完成绑定');
+    qr.innerHTML='<img src="'+d.data.qr+'" style="width:200px;height:200px;border-radius:8px">';
     if(wxBindTimer)clearInterval(wxBindTimer);
     wxBindTimer=setInterval(function(){
       api('/auth/wechat/status?sid='+sid).then(function(r2){
         if(r2.pending)return;
         clearInterval(wxBindTimer);
         if(r2.success&&r2.data&&r2.data.bound){
-          document.getElementById('wxBindStatus').textContent='已绑定';
-          document.getElementById('wxBindBtn').style.display='none';
-          if(r2.data.already){showToast('该微信已绑定当前账号');}
-          else{showToast('微信绑定成功');}
+          qr.innerHTML='<p style="color:#34d399;font-size:15px">✅ 绑定成功</p>';
+          setTimeout(function(){closeBindModal();loadData()},800);
         } else if(!r2.success){
-          if(btn)btn.disabled=false;
-          showToast(r2.error||'绑定失败','err');
+          qr.innerHTML='<p style="color:#f87171">'+(r2.error||'绑定失败')+'</p>';
         }
       });
     },2000);
-  });
-}
-
-function bindPhone(){
-  var phone=document.getElementById('bindPhone').value;
-  var code=document.getElementById('phoneCode').value;
-  if(!phone||!code){showToast('请填写完整','err');return}
-  api('/auth/bind-phone',{phone:phone,code:code}).then(function(d){
-    if(d.success){document.getElementById('infoPhone').textContent=phone;showToast('手机号已绑定')}
-    else showToast(d.error||'绑定失败','err');
   });
 }
 

@@ -102,7 +102,6 @@ checkAuth();
     document.getElementById("tab-wx").onclick = function(){ showLogin("wechat"); };
     if (tab==="account") {
       document.getElementById("la-btn").onclick = doAccountLogin;
-      document.getElementById("go-register").onclick = showRegister;
       document.getElementById("amode-code").onclick = function(){ setAccMode("code"); };
       document.getElementById("amode-pwd").onclick = function(){ setAccMode("pwd"); };
       setAccMode("code");
@@ -129,8 +128,6 @@ checkAuth();
       '<div id="la-dynamic"></div>' +
       '<button id="la-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
       '<div id="la-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
-      '<div style="text-align:center;margin-top:12px"><a href="https://auth.xianbao.online/reset-password" style="color:#64748b;font-size:13px;text-decoration:none">忘记密码？</a></div>' +
-      '<div style="text-align:center;margin-top:8px"><span style="color:#64748b;font-size:13px">还没有账号？</span><a href="#" id="go-register" style="color:#7c3aed;font-size:13px;text-decoration:none">立即注册</a></div>' +
     '</div>';
   }
   function setAccMode(mode) {
@@ -188,7 +185,7 @@ checkAuth();
       var body = isPhone ? { phone: acc, password: pwd } : { email: acc, password: pwd };
       api("/login", { method: "POST", body: body }).then(function(res){
         if (res.success) { closeModal(); checkAuth(); }
-        else { showErr("la-err", res.error || "登录失败"); }
+        else { showErr("la-err", (res.error || "登录失败") + "，可切换验证码登录"); }
       });
     }
   }

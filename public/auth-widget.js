@@ -121,12 +121,12 @@ checkAuth();
   function loginAccountHtml() {
     return '<div id="login-account">' +
       '<div style="display:flex;gap:10px;margin-bottom:12px">' +
-        '<span id="amode-code" style="cursor:pointer;padding:4px 0;font-size:14px;color:#e0e0e0;border-bottom:2px solid #7c3aed">验证码登录</span>' +
-        '<span id="amode-pwd" style="cursor:pointer;padding:4px 0;font-size:14px;color:#64748b">密码登录</span>' +
+        '<span id="amode-code" style="cursor:pointer;padding:4px 0;font-size:14px;color:#e0e0e0;border-bottom:2px solid #7c3aed">验证码</span>' +
+        '<span id="amode-pwd" style="cursor:pointer;padding:4px 0;font-size:14px;color:#64748b">密码</span>' +
       '</div>' +
       '<input id="la-account" placeholder="手机号/邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
       '<div id="la-dynamic"></div>' +
-      '<button id="la-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
+      '<button id="la-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录/注册</button>' +
       '<div id="la-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
     '</div>';
   }

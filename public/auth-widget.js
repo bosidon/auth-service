@@ -85,30 +85,27 @@ checkAuth();
       document.body.appendChild(modalEl);
     }
     modalEl.style.display = "flex";
-    showLogin(tab||"password");
+    showLogin(tab||"wechat");
   }
   function showLogin(tab) {
     modalEl.innerHTML =
       '<div style="background:#14141e;border:1px solid #1e1e2a;border-radius:16px;padding:32px;width:360px;max-width:90vw">' +
         '<div style="display:flex;gap:12px;margin-bottom:20px">' +
-          '<span id="tab-pwd" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="password"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">密码登录</span>' +
-          '<span id="tab-code" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="code"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">验证码登录</span>' +
-          '<span id="tab-wx" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="wechat"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">微信登录</span>' +
+          '<span id="tab-account" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="account"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">手机/邮箱</span>' +
+          '<span id="tab-wx" style="cursor:pointer;padding:4px 0;font-size:15px;'+(tab==="wechat"?"color:#e0e0e0;border-bottom:2px solid #7c3aed":"color:#64748b")+'">微信</span>' +
           '<span style="flex:1"></span>' +
           '<span onclick="XianbaoAuth.closeModal()" style="cursor:pointer;color:#64748b;font-size:18px">&#10005;</span>' +
         '</div>' +
-        (tab==="password" ? loginPwdHtml() : (tab==="code" ? loginCodeHtml() : loginWechatHtml())) +
+        (tab==="account" ? loginAccountHtml() : loginWechatHtml()) +
       '</div>';
-    document.getElementById("tab-pwd").onclick = function(){ showLogin("password"); };
-    document.getElementById("tab-code").onclick = function(){ showLogin("code"); };
+    document.getElementById("tab-account").onclick = function(){ showLogin("account"); };
     document.getElementById("tab-wx").onclick = function(){ showLogin("wechat"); };
-    if (tab==="password") {
-      document.getElementById("lp-btn").onclick = doPasswordLogin;
+    if (tab==="account") {
+      document.getElementById("la-btn").onclick = doAccountLogin;
       document.getElementById("go-register").onclick = showRegister;
-    }
-    if (tab==="code") {
-      document.getElementById("lc-btn").onclick = doCodeLogin;
-      document.getElementById("lc-send").onclick = sendCode;
+      document.getElementById("amode-code").onclick = function(){ setAccMode("code"); };
+      document.getElementById("amode-pwd").onclick = function(){ setAccMode("pwd"); };
+      setAccMode("code");
     }
     if (tab==="wechat") {
       if (isWechat) {
@@ -121,27 +118,82 @@ checkAuth();
       }
     }
   }
-  function loginPwdHtml() {
-    return '<div id="login-pwd">' +
-      '<input id="lp-email" placeholder="手机号/邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
-      '<input id="lp-pwd" type="password" placeholder="密码" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:16px;box-sizing:border-box">' +
-      '<button id="lp-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
-      '<div id="lp-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
+  var accMode = 'code';
+  function loginAccountHtml() {
+    return '<div id="login-account">' +
+      '<div style="display:flex;gap:10px;margin-bottom:12px">' +
+        '<span id="amode-code" style="cursor:pointer;padding:4px 0;font-size:14px;color:#e0e0e0;border-bottom:2px solid #7c3aed">验证码登录</span>' +
+        '<span id="amode-pwd" style="cursor:pointer;padding:4px 0;font-size:14px;color:#64748b">密码登录</span>' +
+      '</div>' +
+      '<input id="la-account" placeholder="手机号/邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
+      '<div id="la-dynamic"></div>' +
+      '<button id="la-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
+      '<div id="la-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
       '<div style="text-align:center;margin-top:12px"><a href="https://auth.xianbao.online/reset-password" style="color:#64748b;font-size:13px;text-decoration:none">忘记密码？</a></div>' +
       '<div style="text-align:center;margin-top:8px"><span style="color:#64748b;font-size:13px">还没有账号？</span><a href="#" id="go-register" style="color:#7c3aed;font-size:13px;text-decoration:none">立即注册</a></div>' +
     '</div>';
   }
-  function loginCodeHtml() {
-    return '<div id="login-code">' +
-      '<input id="lc-phone" placeholder="手机号" type="tel" maxlength="11" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">' +
-      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
-        '<input id="lc-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">' +
-        '<button id="lc-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap">发送</button>' +
-      '</div>' +
-      '<button id="lc-btn" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">登录</button>' +
-      '<div id="lc-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
-    '</div>';
+  function setAccMode(mode) {
+    accMode = mode;
+    var active = "cursor:pointer;padding:4px 0;font-size:14px;color:#e0e0e0;border-bottom:2px solid #7c3aed";
+    var normal = "cursor:pointer;padding:4px 0;font-size:14px;color:#64748b";
+    document.getElementById("amode-code").style.cssText = mode === 'code' ? active : normal;
+    document.getElementById("amode-pwd").style.cssText = mode === 'pwd' ? active : normal;
+    var d = document.getElementById("la-dynamic");
+    if (mode === 'code') {
+      d.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+        '<input id="la-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">' +
+        '<button id="la-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap">获取验证码</button>' +
+        '</div>';
+      document.getElementById("la-send").onclick = accSendCode;
+    } else {
+      d.innerHTML = '<input id="la-pwd" type="password" placeholder="密码" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:14px;box-sizing:border-box">';
+    }
   }
+  function accSendCode() {
+    var acc = document.getElementById("la-account").value.trim();
+    var isPhone = /^1[3-9]\d{9}$/.test(acc);
+    if (!acc || (!isPhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(acc))) { showErr("la-err", "请输入正确的手机号或邮箱"); return; }
+    var btn = document.getElementById("la-send");
+    btn.disabled = true;
+    var ep = isPhone ? "/send-phone-code" : "/send-code";
+    var body = isPhone ? { phone: acc } : { email: acc };
+    api(ep, { method: "POST", body: body }).then(function(res){
+      if (!res.success) { showErr("la-err", res.error || "发送失败"); btn.disabled = false; return; }
+      showErr("la-err", "验证码已发送");
+      var n = 60, ot = btn.innerText;
+      var timer = setInterval(function(){
+        n--; btn.innerText = n + "s";
+        if (n <= 0) { clearInterval(timer); btn.disabled = false; btn.innerText = ot; }
+      }, 1000);
+    });
+  }
+  function doAccountLogin() {
+    var acc = document.getElementById("la-account").value.trim();
+    if (!acc) { showErr("la-err", "请输入手机号或邮箱"); return; }
+    var isPhone = /^1[3-9]\d{9}$/.test(acc);
+    if (!isPhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(acc)) { showErr("la-err", "账号格式不正确"); return; }
+    if (accMode === 'code') {
+      var code = document.getElementById("la-code").value;
+      if (!code) { showErr("la-err", "请输入验证码"); return; }
+      var ep = isPhone ? "/login-with-phone" : "/login-code";
+      var body = isPhone ? { phone: acc, code: code } : { email: acc, code: code };
+      api(ep, { method: "POST", body: body }).then(function(res){
+        if (res.success) { closeModal(); checkAuth(); }
+        else { showErr("la-err", res.error || "登录失败"); }
+      });
+    } else {
+      var pwd = document.getElementById("la-pwd").value;
+      if (!pwd) { showErr("la-err", "请输入密码"); return; }
+      var body = isPhone ? { phone: acc, password: pwd } : { email: acc, password: pwd };
+      api("/login", { method: "POST", body: body }).then(function(res){
+        if (res.success) { closeModal(); checkAuth(); }
+        else { showErr("la-err", res.error || "登录失败"); }
+      });
+    }
+  }
+  
+  
   function loginWechatHtml() {
     if (isWechat) {
       return '<div id="login-wechat" style="text-align:center">' +
@@ -204,47 +256,9 @@ checkAuth();
     var el = document.getElementById(id);
     if (el) { el.textContent = msg; el.style.display = "block"; }
   }
-  function doPasswordLogin() {
-    var account = document.getElementById("lp-email").value.trim();
-    var pwd = document.getElementById("lp-pwd").value;
-    if (!account || !pwd) { showErr("lp-err", "请填写完整"); return; }
-    var body = /^1[3-9]\d{9}$/.test(account) ? { phone: account, password: pwd } : { email: account, password: pwd };
-    api("/login", { method: "POST", body: body }).then(function(res){
-      if (res.success) { closeModal(); checkAuth(); }
-      else { showErr("lp-err", res.error || "登录失败"); }
-    });
-  }
-  function doCodeLogin() {
-    var phone = document.getElementById("lc-phone").value;
-    var code = document.getElementById("lc-code").value;
-    if (!phone || !code) { showErr("lc-err", "请填写完整"); return; }
-    if (!/^1[3-9]\d{9}$/.test(phone)) { showErr("lc-err", "手机号格式不正确"); return; }
-    api("/login-with-phone", { method: "POST", body: { phone: phone, code: code } }).then(function(res){
-      if (res.success) { closeModal(); checkAuth(); }
-      else { showErr("lc-err", res.error || "登录失败"); }
-    });
-  }
-  function sendCode() {
-    var phone = document.getElementById("lc-phone").value;
-    if (!phone) { showErr("lc-err", "请输入手机号"); return; }
-    if (!/^1[3-9]\d{9}$/.test(phone)) { showErr("lc-err", "手机号格式不正确"); return; }
-    api("/send-phone-code", { method: "POST", body: { phone: phone } }).then(function(res){
-      if (res.success) {
-        showErr("lc-err", "验证码已发送");
-        var btn = document.getElementById("lc-send");
-        var n = 60;
-        btn.disabled = true;
-        btn.style.opacity = "0.5";
-        var timer = setInterval(function(){
-          n--;
-          btn.textContent = n + "s";
-          if (n <= 0) { clearInterval(timer); btn.disabled = false; btn.style.opacity = "1"; btn.textContent = "发送"; }
-        }, 1000);
-      } else {
-        showErr("lc-err", res.error || "发送失败");
-      }
-    });
-  }
+  
+  
+  
   function showRegister() {
     modalEl.innerHTML =
       '<div style="background:#14141e;border:1px solid #1e1e2a;border-radius:16px;padding:32px;width:360px;max-width:90vw">' +
@@ -259,7 +273,7 @@ checkAuth();
         '<div id="rg-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>' +
         '<div style="text-align:center;margin-top:12px"><span style="color:#64748b;font-size:13px">已有账号？</span><a href="#" id="go-login" style="color:#7c3aed;font-size:13px;text-decoration:none">立即登录</a></div>' +
       '</div>';
-    document.getElementById("go-login").onclick = function(){ showLogin("password"); };
+    document.getElementById("go-login").onclick = function(){ showLogin("account"); };
     document.getElementById("rg-btn").onclick = function(){
       var email = document.getElementById("rg-email").value;
       var nick = document.getElementById("rg-nick").value;

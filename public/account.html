@@ -71,43 +71,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
   
   </div>
 
-  <!-- 账户信息（内联编辑） -->
+  <!-- 账户信息 + 绑定 -->
   <div class="card">
     <div class="card-title">👤 账户信息</div>
-    <div class="info-row">
-      <span class="info-label">邮箱</span>
-      <span class="info-value" id="infoEmail">-</span>
-    </div>
-
     <div class="info-row">
       <span class="info-label">昵称</span>
       <input class="edit-input" id="editNickname" placeholder="设置昵称">
       <button class="edit-btn" onclick="saveField('nickname')">保存</button>
     </div>
     <div class="info-row">
-      <span class="info-label">手机</span>
-      <span class="info-value" id="infoPhone">未绑定</span>
-    </div>
-    <div class="info-row">
       <span class="info-label">注册</span>
       <span class="info-value" id="infoCreated">-</span>
     </div>
-  </div>
-
-  <!-- 账号绑定 -->
-  <div class="card">
-    <div class="card-title">🔗 账号绑定</div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon phone">📱</div><div><div class="binding-name">手机号</div><div class="binding-status" id="bindPhoneVal">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" id="phoneBindBtn" onclick="openBindModal('phone')">绑定</button>
-    </div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon email">✉️</div><div><div class="binding-name">邮箱</div><div class="binding-status" id="bindEmailVal">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" id="emailBindBtn" onclick="openBindModal('email')">绑定</button>
-    </div>
-    <div class="binding-item">
-      <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wxBindStatus">未绑定</div></div></div>
-      <button class="btn btn-outline btn-sm" id="wxBindBtn" onclick="openBindModal('wechat')">绑定</button>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
+      <div class="binding-item">
+        <div class="binding-left"><div class="binding-icon phone">📱</div><div><div class="binding-name">手机号</div><div class="binding-status" id="bindPhoneVal">未绑定</div></div></div>
+        <button class="btn btn-outline btn-sm" id="phoneBindBtn" onclick="openBindModal('phone')">绑定</button>
+      </div>
+      <div class="binding-item">
+        <div class="binding-left"><div class="binding-icon email">✉️</div><div><div class="binding-name">邮箱</div><div class="binding-status" id="bindEmailVal">未绑定</div></div></div>
+        <button class="btn btn-outline btn-sm" id="emailBindBtn" onclick="openBindModal('email')">绑定</button>
+      </div>
+      <div class="binding-item">
+        <div class="binding-left"><div class="binding-icon wechat">W</div><div><div class="binding-name">微信</div><div class="binding-status" id="wxBindStatus">未绑定</div></div></div>
+        <button class="btn btn-outline btn-sm" id="wxBindBtn" onclick="openBindModal('wechat')">绑定</button>
+      </div>
     </div>
   </div>
 
@@ -158,10 +146,8 @@ function loadData(){
   apiGet('/auth/me').then(function(d){
     if(!d.success)return;
     var u=d.data;
-    document.getElementById('infoEmail').textContent=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email&&u.email.indexOf('@sms.local')>-1)?'手机号登录':(u.email||'-');
     document.getElementById('editNickname').value=(u.nickname&&u.nickname!=='微信用户')?u.nickname:'';
     loadBindings();
-    document.getElementById('infoPhone').textContent=u.phone||'未绑定';
     document.getElementById('bindPhoneVal').textContent=u.phone||'未绑定';
     var pbtn=document.getElementById('phoneBindBtn');
     if(u.phone){pbtn.textContent='已绑定';pbtn.disabled=true;pbtn.style.opacity=.5}

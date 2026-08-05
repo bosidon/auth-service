@@ -153,7 +153,7 @@ function loadData(){
   apiGet('/auth/me').then(function(d){
     if(!d.success)return;
     var u=d.data;
-    document.getElementById('infoEmail').textContent=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email||'-');
+    document.getElementById('infoEmail').textContent=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email&&u.email.indexOf('@sms.local')>-1)?'手机号登录':(u.email||'-');
     document.getElementById('editNickname').value=(u.nickname&&u.nickname!=='微信用户')?u.nickname:'';
     loadBindings();
     document.getElementById('infoPhone').textContent=u.phone||'未绑定';

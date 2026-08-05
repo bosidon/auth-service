@@ -205,7 +205,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db.get(
-      'SELECT id, email, nickname, role, avatar_url, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, avatar_url, phone, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
 

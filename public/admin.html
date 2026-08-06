@@ -505,17 +505,17 @@ async function loadUsers() {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorMsg').textContent = err.message;
     document.getElementById('errorState').style.display = 'block';
+    // 仅未登录时注册：登录成功后刷新一次进入后台（避免已登录用户无限刷新）
+    if (typeof XianbaoAuth !== 'undefined' && XianbaoAuth.onAuthChange) {
+      var _admReloaded = false;
+      XianbaoAuth.onAuthChange(function(state) {
+        if (state.loggedIn && !_admReloaded) { _admReloaded = true; setTimeout(function(){ location.reload(); }, 600); }
+      });
+    }
   }
 }
 
 async function init() {
-  // 登录成功后自动刷新（管理员检查）
-  if (typeof XianbaoAuth !== 'undefined' && XianbaoAuth.onAuthChange) {
-    var _admReloaded = false;
-    XianbaoAuth.onAuthChange(function(state) {
-      if (state.loggedIn && !_admReloaded) { _admReloaded = true; setTimeout(function(){ location.reload(); }, 600); }
-    });
-  }
   try {
     const meRes = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
     if (!meRes.ok) throw new Error('未登录');

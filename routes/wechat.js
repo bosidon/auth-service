@@ -17,13 +17,16 @@ const { generateToken, setTokenCookie, optionalAuth } = require('../middleware/a
 const APPID = process.env.WECHAT_APPID;
 const SECRET = process.env.WECHAT_SECRET;
 const TOKEN = process.env.WECHAT_TOKEN || 'xianbao2026';
-const BASE_URL = 'https://auth.xianbao.online';
+const BASE_URL = process.env.AUTH_DOMAIN || 'https://auth.xianbao.online';
 // 允许跳回的白名单域名（防开放重定向）
 const ALLOWED_RETURN_HOSTS = [
-  'xianbao.online', 'www.xianbao.online',
-  'auth.xianbao.online', 'read.xianbao.online',
-  'maya.xianbao.online', 'ceping.xianbao.online',
-  'tarot.xianbao.online'
+  (process.env.MAIN_DOMAIN || 'https://xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.WWW_DOMAIN || 'https://www.xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.AUTH_DOMAIN || 'https://auth.xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.READ_DOMAIN || 'https://read.xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.MAYA_DOMAIN || 'https://maya.xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.CEPING_DOMAIN || 'https://ceping.xianbao.online').replace(/^https?:\/\//, ''),
+  (process.env.TAROT_DOMAIN || 'https://tarot.xianbao.online').replace(/^https?:\/\//, '')
 ];
 
 // 扫码登录会话：sid -> { userId, openid, expires }
@@ -269,7 +272,7 @@ router.get('/api/auth/wechat/status', async (req, res) => {
 
 /* ===== 5. 微信内 OAuth 授权跳转 ===== */
 router.get('/wechat/oauth-authorize', (req, res) => {
-  const returnUrl = req.query.returnUrl || 'https://xianbao.online/';
+  const returnUrl = req.query.returnUrl || process.env.MAIN_DOMAIN + '/';
   if (!isValidReturnUrl(returnUrl)) {
     return res.status(400).send('无效的跳转地址');
   }
@@ -290,7 +293,7 @@ router.get('/wechat/oauth-callback', async (req, res) => {
   const { code, state } = req.query;
   const st = oauthStates.get(state);
   if (!st || Date.now() > st.expires) {
-    return res.redirect('https://xianbao.online/?login=expired');
+    return res.redirect(process.env.MAIN_DOMAIN + '/?login=expired');
   }
   oauthStates.delete(state);
   if (!code) {

@@ -9,13 +9,13 @@ const app = express();
 const PORT = process.env.PORT || 3050;
 
 const DEFAULT_CORS = [
-  'https://xianbao.online',
-  'https://www.xianbao.online',
-  'https://auth.xianbao.online',
-  'https://ceping.xianbao.online',
-  'https://tarot.xianbao.online',
-  'https://read.xianbao.online',
-  'https://maya.xianbao.online'
+  process.env.MAIN_DOMAIN || 'https://xianbao.online',
+  process.env.WWW_DOMAIN || 'https://www.xianbao.online',
+  process.env.AUTH_DOMAIN || 'https://auth.xianbao.online',
+  process.env.CEPING_DOMAIN || 'https://ceping.xianbao.online',
+  process.env.TAROT_DOMAIN || 'https://tarot.xianbao.online',
+  process.env.READ_DOMAIN || 'https://read.xianbao.online',
+  process.env.MAYA_DOMAIN || 'https://maya.xianbao.online'
 ];
 
 async function getCorsWhitelist() {

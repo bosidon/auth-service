@@ -16,7 +16,7 @@ async function sendResetEmail(email, token) {
     secure: true,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
-  var resetUrl = 'https://auth.xianbao.online/reset-password?token=' + token;
+  var resetUrl = (process.env.AUTH_DOMAIN || 'https://auth.xianbao.online') + '/reset-password?token=' + token;
   await transporter.sendMail({
     from: process.env.SMTP_FROM || '仙宝心灵成长 <10212643@qq.com>',
     to: email,

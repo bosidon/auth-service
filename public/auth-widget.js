@@ -2,7 +2,7 @@
  * 仙宝统一登录组件 v2
  */
 (function(w){
-  var AUTH = "https://auth.xianbao.online";
+  var AUTH = (window.XB && window.XB.auth) || "https://auth.xianbao.online";
   var isWechat = /MicroMessenger/i.test(navigator.userAgent);
   var state = { loggedIn: false, user: null, initEl: null, _ready: false, _readyCbs: [], _authChangeCbs: [] };
 checkAuth();
@@ -297,6 +297,20 @@ checkAuth();
     isLoggedIn: function(){ return state.loggedIn; },
     getUser: function(){ return state.user; },
     onAuthChange: function(cb){ if(typeof cb==='function'){state._authChangeCbs.push(cb);checkAuth().then(function(){cb({loggedIn:state.loggedIn,user:state.user});});} },
-    showLogin: showModal, logout: logout, checkAuth: checkAuth
+    showLogin: showModal, logout: logout, checkAuth: checkAuth,
+    // 统一"免费次数已用完"升级VIP卡片
+    showLimitCard: function(service, targetEl) {
+      var names = { tarot: '塔罗解读', maya: '玛雅天赋', psych_test: '心理测评', reading: '灵修阅读' };
+      var name = names[service] || '本站';
+      var html = '<div style="text-align:center;padding:40px 20px;">' +
+        '<div style="font-size:48px;margin-bottom:16px;">\uD83D\uDD2E</div>' +
+        '<h3 style="margin:0 0 12px;color:#a78bfa;">免费次数已用完</h3>' +
+        '<p style="margin:0 0 20px;color:#888;font-size:14px;line-height:1.8;">你的免费' + name + '次数已用完。升级VIP后可无限使用<br>塔罗解读 · 玛雅天赋 · 灵修阅读 · 心理测评等全部功能。</p>' +
+        '<a href="' + (window.XB_MAIN || 'https://xianbao.online') + '/vip.html" target="_blank" ' +
+        'style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#a78bfa,#f472b6);' +
+        'color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">✨ 了解VIP会员</a></div>';
+      if (targetEl) { targetEl.innerHTML = html; }
+      return html;
+    }
   };
 })(window);

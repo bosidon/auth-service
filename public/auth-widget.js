@@ -31,7 +31,7 @@ checkAuth();
           '<span style="color:#94a3b8;font-size:13px">' + e(name) + '</span>' +
           '<span style="font-size:10px;color:#64748b">&#9660;</span>' +
           '<div class="xianbao-auth-dd" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#14141e;border:1px solid #1e1e2a;border-radius:10px;padding:6px;min-width:100px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4)">' +
-            '<a href="https://auth.xianbao.online/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号</a>' +
+            '<a href="' + AUTH + '/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号</a>' +
             '<div style="height:1px;background:#1e1e2a;margin:4px 6px"></div>' +
             '<a href="#" id="xianbao-auth-logout" style="display:block;padding:8px 12px;border-radius:6px;color:#f87171;text-decoration:none;font-size:13px">&#128682; 退出</a>' +
           '</div>' +
@@ -110,7 +110,7 @@ checkAuth();
       if (isWechat) {
         var ob = document.getElementById("wx-oauth-btn");
         if (ob) ob.onclick = function() {
-          location.href = "https://auth.xianbao.online/wechat/oauth-authorize?returnUrl=" + encodeURIComponent(location.href);
+          location.href = AUTH + "/wechat/oauth-authorize?returnUrl=" + encodeURIComponent(location.href);
         };
       } else {
         startWechatLogin();

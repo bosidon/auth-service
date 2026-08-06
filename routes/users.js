@@ -70,13 +70,14 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     let whereClause = '';
     const params = [];
     if (search) {
-      whereClause = 'WHERE email LIKE ? OR nickname LIKE ?';
-      params.push(`%${search}%`, `%${search}%`);
+      whereClause = 'WHERE u.email LIKE ? OR u.nickname LIKE ? OR u.phone LIKE ?';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const users = await db.query(
-      'SELECT id, email, nickname, role, plan, expires_at, avatar_url, created_at, updated_at FROM users ' +
-      whereClause + ' ORDER BY id ASC LIMIT ? OFFSET ?',
+      'SELECT u.id, u.email, u.phone, u.nickname, u.role, u.plan, u.expires_at, u.avatar_url, u.created_at, u.updated_at, ' +
+      "(SELECT COUNT(*) FROM user_bindings b WHERE b.user_id = u.id AND b.provider = 'wechat') AS wechat_bound " +
+      'FROM users u ' + whereClause.replace(/WHERE /, 'WHERE ') + ' ORDER BY u.id ASC LIMIT ? OFFSET ?',
       [...params, limit, offset]
     );
 

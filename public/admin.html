@@ -34,7 +34,13 @@ body {
   background: #14141e; border: 1px solid #1e1e2a; border-radius: 12px;
   overflow-x: auto;
 }
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .usage-col { text-align: center; }
+  .usage-num { text-align: center; font-size: 13px; }
+  .contact-cell { font-size: 12.5px; line-height: 1.7; color: #ccc; }
+  .contact-cell .c-email { color: #94a3b8; word-break: break-all; }
+  .contact-cell .c-phone { color: #7dd3fc; }
+  .contact-cell .c-wx { color: #6ee7b7; }
 thead { background: #1a1a26; }
 th {
   padding: 10px 12px; text-align: left; font-size: 12px;
@@ -229,11 +235,14 @@ tr:hover td { background: #1a1a26; }
           <tr>
             <th>ID</th>
             <th style="min-width:80px">昵称</th>
-            <th>邮箱</th>
+            <th style="min-width:140px">联系方式</th>
             <th>角色</th>
             <th>套餐</th>
             <th>到期时间</th>
-            <th>用量</th>
+            <th class="usage-col">塔罗</th>
+            <th class="usage-col">玛雅</th>
+            <th class="usage-col">测评</th>
+            <th class="usage-col">阅读</th>
             <th>注册时间</th>
             <th>操作</th>
           </tr>
@@ -356,26 +365,34 @@ function renderUsers(users) {
       '</select>';
     }
 
-    // Usage display
+    // Usage display（4 列数字）
     const usage = allUsageMap[u.id] || [];
-    let usageHtml = '';
-    if (usage.length > 0) {
-      usageHtml = usage.map(function(s) {
-        var label = SERVICE_LABELS[s.service] || s.service;
-        return '<span>' + label + ': ' + s.used + '</span>';
-      }).join(' &nbsp;|&nbsp; ');
-    } else {
-      usageHtml = '<span style="color:#555">-</span>';
+    const um = {};
+    (usage || []).forEach(function(s) { um[s.service] = s.used; });
+    const svcList = ['tarot', 'maya', 'psych_test', 'reading'];
+    const usageTds = svcList.map(function(s) {
+      return '<td class="usage-num">' + (um[s] !== undefined ? um[s] : '-') + '</td>';
+    }).join('');
+
+    // 联系方式列（虚拟邮箱不显示，有什么显示什么）
+    function isVirtualEmail(em) {
+      if (!em) return true;
+      return /@(sms\.local|wechat\.local|xianbao\.online)$/i.test(em) || /^verify@/.test(em);
     }
+    const contactParts = [];
+    if (u.email && !isVirtualEmail(u.email)) contactParts.push('<div class="c-email">📧 ' + escHtml(u.email) + '</div>');
+    if (u.phone) contactParts.push('<div class="c-phone">📱 ' + escHtml(u.phone) + '</div>');
+    if (u.wechat_bound > 0) contactParts.push('<div class="c-wx">💬 微信已绑定</div>');
+    const contactHtml = contactParts.length ? contactParts.join('') : '<span style="color:#555">—</span>';
 
     return `<tr>
       <td style="color:#666">${u.id}</td>
       <td style="min-width:80px"><strong>${escHtml(u.nickname || '未设置')}</strong></td>
-      <td style="color:#aaa">${escHtml(u.email)}</td>
+      <td class="contact-cell">${contactHtml}</td>
       <td>${roleSelect}</td>
       <td>${planSelect}</td>
       <td style="color:#888;font-size:12px">${u.plan === 'vip' && u.expires_at ? fmtDate(u.expires_at) : '-'}</td>
-      <td class="usage-cell">${usageHtml}</td>
+      ${usageTds}
       <td style="color:#666;font-size:13px">${fmtDate(u.created_at)}</td>
       <td>
         ${!isSelf ? `<div style="display:flex;gap:6px;flex-wrap:nowrap">` + (u.plan === 'vip' && u.expires_at ? `<button class="btn-outline" style="padding:4px 10px;font-size:12px;white-space:nowrap" onclick="renewPlan(${u.id})">续卡</button>` : '') + `</div>` : '-'}

@@ -171,7 +171,8 @@ tr:hover td { background: #1a1a26; }
 <body>
 
 <div id="xianbao-topbar"></div>
-<script src="https://assets.xianbao.online/xianbao/xianbao-topbar.js"></script>
+<script src="https://xianbao.online/assets/xianbao/xianbao-topbar.js"></script>
+<script src="https://xianbao.online/assets/xianbao/auth-widget.js"></script>
 
 <div class="topbar-spacer"></div>
 
@@ -257,7 +258,7 @@ tr:hover td { background: #1a1a26; }
       <h2 style="color:#a78bfa; margin-bottom:8px;">需要管理员权限</h2>
       <p style="color:#888; font-size:14px;">请使用管理员账号登录后访问此页面</p>
       <br>
-      <a href="https://xianbao.online/login" class="btn" style="display:inline-block; text-decoration:none;">前往登录</a>
+      <a href="javascript:void(0)" onclick="if(typeof XianbaoAuth!=='undefined'&&XianbaoAuth.showLogin){XianbaoAuth.showLogin();}else{location.href='https://auth.xianbao.online/';}" class="btn" style="display:inline-block; text-decoration:none;">前往登录</a>
     </div>
   </div>
 </div>
@@ -507,6 +508,13 @@ async function loadUsers() {
 }
 
 async function init() {
+  // 登录成功后自动刷新（管理员检查）
+  if (typeof XianbaoAuth !== 'undefined' && XianbaoAuth.onAuthChange) {
+    var _admReloaded = false;
+    XianbaoAuth.onAuthChange(function(state) {
+      if (state.loggedIn && !_admReloaded) { _admReloaded = true; setTimeout(function(){ location.reload(); }, 600); }
+    });
+  }
   try {
     const meRes = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
     if (!meRes.ok) throw new Error('未登录');

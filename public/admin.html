@@ -35,8 +35,13 @@ body {
   overflow-x: auto;
 }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .usage-col { text-align: center; }
+  .usage-col { text-align: center; width: 42px; min-width: 42px; }
   .usage-num { text-align: center; font-size: 13px; }
+  /* 数字/日期列最小宽度 */
+  th:nth-child(1), td:nth-child(1) { width: 44px; min-width: 44px; text-align: center; }
+  th:nth-child(6), td:nth-child(6), th:nth-child(11), td:nth-child(11) { width: 96px; min-width: 96px; white-space: nowrap; }
+  th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { width: 84px; }
+  th:nth-child(12), td:nth-child(12) { width: 80px; }
   .contact-cell { font-size: 12.5px; line-height: 1.7; color: #ccc; }
   .contact-cell .c-email { color: #94a3b8; word-break: break-all; }
   .contact-cell .c-phone { color: #7dd3fc; }

@@ -7,7 +7,7 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 const JWT_EXPIRES = '30d';
-const COOKIE_DOMAIN = '.xianbao.online';
+const COOKIE_DOMAIN = '.xianbao.love';
 const COOKIE_NAME = 'xianbao_token';
 
 // JWT认证中间件

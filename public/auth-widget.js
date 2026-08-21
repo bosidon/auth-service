@@ -2,7 +2,7 @@
  * 仙宝统一登录组件 v2
  */
 (function(w){
-  var AUTH = (window.XB && window.XB.auth) || "https://auth.xianbao.online";
+  var AUTH = ""; // 同域 API（各站Nginx代理 /api/auth/ + /wechat/ → auth 3050）
   var isWechat = /MicroMessenger/i.test(navigator.userAgent);
   var state = { loggedIn: false, user: null, initEl: null, _ready: false, _readyCbs: [], _authChangeCbs: [] };
 checkAuth();
@@ -31,7 +31,7 @@ checkAuth();
           '<span style="color:#94a3b8;font-size:13px">' + e(name) + '</span>' +
           '<span style="font-size:10px;color:#64748b">&#9660;</span>' +
           '<div class="xianbao-auth-dd" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#14141e;border:1px solid #1e1e2a;border-radius:10px;padding:6px;min-width:100px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4)">' +
-            '<a href="' + AUTH + '/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号</a>' +
+            '<a href="/auth/account" style="display:block;padding:8px 12px;border-radius:6px;color:#e0e0e0;text-decoration:none;font-size:13px">&#9881;&#65039; 账号</a>' +
             '<div style="height:1px;background:#1e1e2a;margin:4px 6px"></div>' +
             '<a href="#" id="xianbao-auth-logout" style="display:block;padding:8px 12px;border-radius:6px;color:#f87171;text-decoration:none;font-size:13px">&#128682; 退出</a>' +
           '</div>' +
@@ -306,7 +306,7 @@ checkAuth();
         '<div style="font-size:48px;margin-bottom:16px;">\uD83D\uDD2E</div>' +
         '<h3 style="margin:0 0 12px;color:#a78bfa;">免费次数已用完</h3>' +
         '<p style="margin:0 0 20px;color:#888;font-size:14px;line-height:1.8;">你的免费' + name + '次数已用完。升级VIP后可无限使用<br>塔罗解读 · 玛雅天赋 · 灵修阅读 · 心理测评等全部功能。</p>' +
-        '<a href="' + (window.XB_MAIN || 'https://xianbao.online') + '/vip.html" target="_blank" ' +
+        '<a href="' + (window.XB_MAIN || 'https://xianbao.love') + '/vip.html" target="_blank" ' +
         'style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#a78bfa,#f472b6);' +
         'color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">✨ 了解VIP会员</a></div>';
       if (targetEl) { targetEl.innerHTML = html; }

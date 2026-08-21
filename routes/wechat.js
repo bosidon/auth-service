@@ -17,16 +17,16 @@ const { generateToken, setTokenCookie, optionalAuth } = require('../middleware/a
 const APPID = process.env.WECHAT_APPID;
 const SECRET = process.env.WECHAT_SECRET;
 const TOKEN = process.env.WECHAT_TOKEN || 'xianbao2026';
-const BASE_URL = process.env.AUTH_DOMAIN || 'https://auth.xianbao.online';
+const BASE_URL = process.env.AUTH_DOMAIN || 'https://auth.xianbao.love';
 // 允许跳回的白名单域名（防开放重定向）
 const ALLOWED_RETURN_HOSTS = [
-  (process.env.MAIN_DOMAIN || 'https://xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.WWW_DOMAIN || 'https://www.xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.AUTH_DOMAIN || 'https://auth.xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.READ_DOMAIN || 'https://read.xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.MAYA_DOMAIN || 'https://maya.xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.CEPING_DOMAIN || 'https://ceping.xianbao.online').replace(/^https?:\/\//, ''),
-  (process.env.TAROT_DOMAIN || 'https://tarot.xianbao.online').replace(/^https?:\/\//, '')
+  (process.env.MAIN_DOMAIN || 'https://xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.WWW_DOMAIN || 'https://www.xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.AUTH_DOMAIN || 'https://auth.xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.READ_DOMAIN || 'https://read.xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.MAYA_DOMAIN || 'https://maya.xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.CEPING_DOMAIN || 'https://ceping.xianbao.love').replace(/^https?:\/\//, ''),
+  (process.env.TAROT_DOMAIN || 'https://tarot.xianbao.love').replace(/^https?:\/\//, '')
 ];
 
 // 扫码登录会话：sid -> { userId, openid, expires }

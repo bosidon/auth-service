@@ -150,11 +150,11 @@ function loadData(){
     loadBindings();
     document.getElementById('bindPhoneVal').textContent=u.phone||'未绑定';
     var pbtn=document.getElementById('phoneBindBtn');
-    if(u.phone){pbtn.textContent='解绑';pbtn.disabled=false;pbtn.style.opacity=1;pbtn.style.color='#ef4444';pbtn.onclick=function(){unbind('phone')}}
+    if(u.phone){pbtn.textContent='解绑';pbtn.disabled=false;pbtn.style.opacity=1;pbtn.style.color='#ef4444';pbtn.onclick=function(){unbind('phone')}} else {pbtn.textContent='绑定';pbtn.style.color='';pbtn.onclick=function(){openBindModal('phone')}}
     var emailDisp=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email&&u.email.indexOf('@sms.local')>-1)?'手机号登录':(u.email||'-');
     document.getElementById('bindEmailVal').textContent=emailDisp;
     var ebtn=document.getElementById('emailBindBtn');
-    if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='解绑';ebtn.disabled=false;ebtn.style.opacity=1;ebtn.style.color='#ef4444';ebtn.onclick=function(){unbind('email')}}
+    if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='解绑';ebtn.disabled=false;ebtn.style.opacity=1;ebtn.style.color='#ef4444';ebtn.onclick=function(){unbind('email')}} else {ebtn.textContent='绑定';ebtn.style.color='';ebtn.onclick=function(){openBindModal('email')}}
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
     if(u.plan&&u.plan!=='free'){
@@ -288,7 +288,7 @@ function loadBindings(){
     }
     document.getElementById('wxBindStatus').textContent=wx?'已绑定':'未绑定';
     var btn=document.getElementById('wxBindBtn');
-    if(wx){btn.textContent='解绑';btn.disabled=false;btn.style.opacity=1;btn.style.color='#ef4444';btn.onclick=function(){unbind('wechat')}}
+    if(wx){btn.textContent='解绑';btn.disabled=false;btn.style.opacity=1;btn.style.color='#ef4444';btn.onclick=function(){unbind('wechat')}} else {btn.textContent='绑定';btn.style.color='';btn.onclick=function(){openBindModal('wechat')}}
   });
 }
 var wxBindTimer=null;

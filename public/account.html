@@ -132,7 +132,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 
 <script src="https://xianbao.love/assets/xianbao/auth-widget.js"></script>
 <script>
-var AUTH='/api',MAIN='https://xianbao.love';
+var AUTH='',MAIN='https://xianbao.love';
 function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok');e.style.display='block';setTimeout(function(){e.style.display='none'},3000)}
 function api(p,d,m){return fetch(AUTH+'/api'+p,{method:m||'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:d?JSON.stringify(d):void 0}).then(function(r){return r.json()})}
 function apiGet(p){return fetch(AUTH+'/api'+p,{credentials:'include'}).then(function(r){return r.json()})}
@@ -150,11 +150,11 @@ function loadData(){
     loadBindings();
     document.getElementById('bindPhoneVal').textContent=u.phone||'未绑定';
     var pbtn=document.getElementById('phoneBindBtn');
-    if(u.phone){pbtn.textContent='已绑定';pbtn.disabled=true;pbtn.style.opacity=.5}
+    if(u.phone){pbtn.textContent='解绑';pbtn.disabled=false;pbtn.style.opacity=1;pbtn.style.color='#ef4444';pbtn.onclick=function(){unbind('phone')}}
     var emailDisp=(u.email&&u.email.indexOf('@wechat.local')>-1)?'微信登录':(u.email&&u.email.indexOf('@sms.local')>-1)?'手机号登录':(u.email||'-');
     document.getElementById('bindEmailVal').textContent=emailDisp;
     var ebtn=document.getElementById('emailBindBtn');
-    if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='已绑定';ebtn.disabled=true;ebtn.style.opacity=.5}
+    if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='解绑';ebtn.disabled=false;ebtn.style.opacity=1;ebtn.style.color='#ef4444';ebtn.onclick=function(){unbind('email')}}
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
     if(u.plan&&u.plan!=='free'){
@@ -206,6 +206,15 @@ function saveField(field){
   });
 }
 
+
+function unbind(provider){
+  var names={phone:'手机号',email:'邮箱',wechat:'微信'};
+  if(!confirm('确定取消绑定'+names[provider]+'？\n取消后该方式将无法登录。'))return;
+  api('/auth/bindings/'+provider,{},'DELETE').then(function(d){
+    if(d.success){showToast('已取消绑定');loadData();}
+    else showToast(d.error||'解绑失败','err');
+  });
+}
 function openBindModal(type){
   var title=document.getElementById('bindModalTitle');
   var body=document.getElementById('bindModalBody');
@@ -279,7 +288,7 @@ function loadBindings(){
     }
     document.getElementById('wxBindStatus').textContent=wx?'已绑定':'未绑定';
     var btn=document.getElementById('wxBindBtn');
-    if(wx){btn.textContent='已绑定';btn.disabled=true;btn.style.opacity=.5;}
+    if(wx){btn.textContent='解绑';btn.disabled=false;btn.style.opacity=1;btn.style.color='#ef4444';btn.onclick=function(){unbind('wechat')}}
   });
 }
 var wxBindTimer=null;
@@ -292,7 +301,7 @@ function bmWxBind(){
     qr.innerHTML='<img src="'+qrUrl+'" style="width:200px;height:200px;border-radius:8px">';
     if(wxBindTimer)clearInterval(wxBindTimer);
     wxBindTimer=setInterval(function(){
-      api('/auth/wechat/status?sid='+sid).then(function(r2){
+      apiGet('/auth/wechat/status?sid='+sid).then(function(r2){
         if(r2.pending)return;
         clearInterval(wxBindTimer);
         if(r2.success&&r2.data&&r2.data.bound){

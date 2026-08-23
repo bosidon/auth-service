@@ -352,4 +352,44 @@ router.post("/verify", async (req, res) => {
   }
 });
 
+
+// 取消绑定（微信/手机/邮箱——至少保留一种登录方式）
+router.delete('/bindings/:provider', authenticateToken, async (req, res) => {
+  try {
+    const provider = req.params.provider;
+    const userId = req.user.id;
+    if (!['wechat', 'phone', 'email'].includes(provider)) {
+      return res.json({ success: false, error: '不支持的绑定类型' });
+    }
+    const u = await db.get('SELECT email, phone FROM users WHERE id = ?', [userId]);
+    if (!u) return res.json({ success: false, error: '用户不存在' });
+
+    // 虚拟邮箱不可解绑（自动生成的登录标识）
+    if (provider === 'email' && u.email && (u.email.indexOf('@wechat.local') > -1 || u.email.indexOf('@sms.local') > -1)) {
+      return res.json({ success: false, error: '虚拟邮箱不可解绑' });
+    }
+    const wxBind = await db.get("SELECT id FROM user_bindings WHERE user_id = ? AND provider = 'wechat'", [userId]);
+
+    // 解绑后剩余登录方式计数
+    let remaining = 0;
+    if (provider !== 'email' && u.email && u.email.indexOf('@wechat.local') === -1 && u.email.indexOf('@sms.local') === -1) remaining++;
+    if (provider !== 'phone' && u.phone) remaining++;
+    if (provider !== 'wechat' && wxBind) remaining++;
+    if (remaining === 0) return res.json({ success: false, error: '至少保留一种登录方式' });
+
+    if (provider === 'wechat') {
+      await db.run("DELETE FROM user_bindings WHERE user_id = ? AND provider = 'wechat'", [userId]);
+    } else if (provider === 'phone') {
+      await db.run('UPDATE users SET phone = NULL WHERE id = ?', [userId]);
+    } else {
+      await db.run('UPDATE users SET email = NULL WHERE id = ?', [userId]);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('取消绑定失败:', e.message);
+    res.json({ success: false, error: '解绑失败' });
+  }
+});
+
 module.exports = router;
+

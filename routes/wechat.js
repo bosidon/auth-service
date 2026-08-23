@@ -121,7 +121,9 @@ async function findOrCreateUser(openid, nickname, avatar) {
         [nickname || null, avatar || null, bind.user_id]
       );
     }
-    return db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [bind.user_id]);
+    const u1 = await db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [bind.user_id]);
+    if (u1 && !u1.nickname) u1.nickname = '微信用户';
+    return u1;
   }
   const email = 'wx_' + openid + '@wechat.local';
   const hash = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10);
@@ -134,7 +136,9 @@ async function findOrCreateUser(openid, nickname, avatar) {
     "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
     [r.lastID, openid]
   );
-  return db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
+  const u2 = await db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
+  if (u2 && !u2.nickname) u2.nickname = '微信用户';
+  return u2;
 }
 
 /* ===== 1. 微信服务器验证 ===== */
@@ -196,7 +200,9 @@ router.post('/wechat/callback', (req, res) => {
               const ui = await getFollowedUserInfo(msg.FromUserName);
               if (ui && ui.nickname) nickname = ui.nickname;
               if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
-            } catch (e) {}
+            } catch (e) {
+              console.error('[wx-login] 关注用户信息异常:', e.message);
+            }
             const user = await findOrCreateUser(msg.FromUserName, nickname, avatar);
             session.userId = user.id;
             session.openid = msg.FromUserName;
@@ -327,7 +333,9 @@ router.get('/wechat/oauth-callback', async (req, res) => {
       const ui = await getWechatUserInfo(j.access_token, j.openid);
       if (ui && ui.nickname) nickname = ui.nickname;
       if (ui && ui.headimgurl) avatar = ui.headimgurl.replace(/\/0$/, '/132');
-    } catch (e) {}
+    } catch (e) {
+      console.error('[wx-login] userinfo异常:', e.message);
+    }
     // 查绑定/创建 + 覆盖昵称头像
     const user = await findOrCreateUser(j.openid, nickname, avatar);
     const token = generateToken(user);

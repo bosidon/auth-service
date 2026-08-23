@@ -155,6 +155,8 @@ function loadData(){
     document.getElementById('bindEmailVal').textContent=emailDisp;
     var ebtn=document.getElementById('emailBindBtn');
     if(u.email&&u.email.indexOf('@sms.local')===-1&&u.email.indexOf('@wechat.local')===-1){ebtn.textContent='解绑';ebtn.disabled=false;ebtn.style.opacity=1;ebtn.style.color='#ef4444';ebtn.onclick=function(){unbind('email')}} else {ebtn.textContent='绑定';ebtn.style.color='';ebtn.onclick=function(){openBindModal('email')}}
+    window._accEmail=(u.email&&u.email.indexOf('@wechat.local')===-1&&u.email.indexOf('@sms.local')===-1)?u.email:'';
+    window._accPhone=u.phone||'';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
     if(u.plan&&u.plan!=='free'){
@@ -319,14 +321,16 @@ function openPwdModal(){
   var title=document.getElementById('bindModalTitle');
   var body=document.getElementById('bindModalBody');
   title.textContent='🔒 设置/修改密码';
-  body.innerHTML='<input id="pm-account" placeholder="手机号/邮箱" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box">'+
+  body.innerHTML='<input id="pm-account" placeholder="手机号/邮箱" autocomplete="off" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box">'+
     '<div style="display:flex;gap:8px;margin-bottom:10px">'+
-      '<input id="pm-code" placeholder="验证码" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">'+
+      '<input id="pm-code" placeholder="验证码" autocomplete="off" style="flex:1;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box">'+
       '<button id="pm-send" style="padding:10px 14px;border:none;border-radius:8px;background:#1e1e2a;color:#94a3b8;font-size:13px;cursor:pointer;white-space:nowrap" onclick="pmSendCode()">获取验证码</button>'+
     '</div>'+
-    '<input id="pm-pwd" type="password" placeholder="新密码（至少6位）" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:14px;box-sizing:border-box">'+
+    '<input id="pm-pwd" type="password" placeholder="新密码（至少6位）" autocomplete="new-password" style="width:100%;padding:10px 14px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:14px;box-sizing:border-box">'+
     '<button onclick="pmSubmit()" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer">确认修改</button>'+
     '<div id="pm-err" style="color:#f87171;font-size:13px;margin-top:10px;display:none"></div>';
+  var _accEl=document.getElementById('pm-account');
+  if(_accEl){var _em=window._accEmail||'',_ph=window._accPhone||'';_accEl.value=_em||_ph||'';}
   document.getElementById('bindModal').style.display='flex';
 }
 function pmErr(m){

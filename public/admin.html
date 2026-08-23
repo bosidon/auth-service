@@ -400,7 +400,7 @@ function renderUsers(users) {
       ${usageTds}
       <td style="color:#666;font-size:13px">${fmtDate(u.created_at)}</td>
       <td>
-        ${!isSelf ? `<div style="display:flex;gap:6px;flex-wrap:nowrap">` + (u.plan === 'vip' && u.expires_at ? `<button class="btn-outline" style="padding:4px 10px;font-size:12px;white-space:nowrap" onclick="renewPlan(${u.id})">续卡</button>` : '') + `<button class="btn-danger" style="padding:4px 10px;font-size:12px;white-space:nowrap;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer" onclick="deleteUser(${u.id}, '${(u.nickname||'').replace(/'/g, "\\'")}')">删除</button>` + `</div>` : '-'}
+        ${!isSelf ? `<div style="display:flex;gap:6px;flex-wrap:nowrap">` + `<button class="btn-danger" style="padding:4px 10px;font-size:12px;white-space:nowrap;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer" onclick="deleteUser(${u.id}, '${(u.nickname||'').replace(/'/g, "\\'")}')">删除</button>` + (u.plan === 'vip' && u.expires_at ? `<button class="btn-outline" style="padding:4px 10px;font-size:12px;white-space:nowrap" onclick="renewPlan(${u.id})">续卡</button>` : '') + `</div>` : '-'}
       </td>
     </tr>`;
   }).join('');

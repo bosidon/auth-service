@@ -273,7 +273,7 @@ tr:hover td { background: #1a1a26; }
       <h2 style="color:#a78bfa; margin-bottom:8px;">需要管理员权限</h2>
       <p style="color:#888; font-size:14px;">请使用管理员账号登录后访问此页面</p>
       <br>
-      <a href="javascript:void(0)" onclick="if(typeof XianbaoAuth!=='undefined'&&XianbaoAuth.showLogin){XianbaoAuth.showLogin();}else{location.href=.//auth/.;}" class="btn" style="display:inline-block; text-decoration:none;">前往登录</a>
+      <a href="javascript:void(0)" onclick="if(typeof XianbaoAuth!=='undefined'&&XianbaoAuth.showLogin){XianbaoAuth.showLogin();}else{location.href='/auth/';}" class="btn" style="display:inline-block; text-decoration:none;">前往登录</a>
     </div>
   </div>
 </div>
@@ -400,7 +400,7 @@ function renderUsers(users) {
       ${usageTds}
       <td style="color:#666;font-size:13px">${fmtDate(u.created_at)}</td>
       <td>
-        ${!isSelf ? `<div style="display:flex;gap:6px;flex-wrap:nowrap">` + (u.plan === 'vip' && u.expires_at ? `<button class="btn-outline" style="padding:4px 10px;font-size:12px;white-space:nowrap" onclick="renewPlan(${u.id})">续卡</button>` : '') + `</div>` : '-'}
+        ${!isSelf ? `<div style="display:flex;gap:6px;flex-wrap:nowrap">` + (u.plan === 'vip' && u.expires_at ? `<button class="btn-outline" style="padding:4px 10px;font-size:12px;white-space:nowrap" onclick="renewPlan(${u.id})">续卡</button>` : '') + `<button class="btn-danger" style="padding:4px 10px;font-size:12px;white-space:nowrap;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer" onclick="deleteUser(${u.id}, '${(u.nickname||'').replace(/'/g, "\\'")}')">删除</button>` + `</div>` : '-'}
       </td>
     </tr>`;
   }).join('');
@@ -453,6 +453,17 @@ async function updateField(userId, field, value, selectEl, originalAttr) {
   }
 }
 
+
+function deleteUser(id, nickname) {
+  if (!confirm('确定删除用户「' + (nickname || '#' + id) + '」？\n将同时删除其全部数据（用量/绑定/日志/阅读/测评/塔罗/留言），不可恢复！')) return;
+  fetch('/api/users/' + id, { method: 'DELETE', credentials: 'include' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) { alert('已删除'); loadUsers(); }
+      else alert(d.error || '删除失败');
+    })
+    .catch(() => alert('网络错误'));
+}
 async function loadUsers() {
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('tableContent').style.display = 'none';

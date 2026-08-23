@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const sqlite3 = require('sqlite3').verbose();
 
 // ===== 获取用户操作日志 =====
 router.get('/logs', authenticateToken, async (req, res) => {
@@ -198,4 +199,52 @@ router.post('/:id/renew', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+
+// ===== 删除用户（跨库级联清理） =====
+function openDbFile(p) {
+  return new Promise((resolve, reject) => {
+    const d = new sqlite3.Database(p, (err) => err ? reject(err) : resolve(d));
+  });
+}
+function runDbFile(db, sql, params) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params || [], function(err) { err ? reject(err) : resolve(this); });
+  });
+}
+async function deleteUserSiteData(userId) {
+  const jobs = [
+    { db: '/var/www/lingxiu/data/xianbao.db', sql: 'DELETE FROM reading_progress WHERE user_id = ?' },
+    { db: '/var/www/psych-test/data/psychological_assessment.db', sql: 'DELETE FROM assessment_results WHERE user_id = ?' },
+    { db: '/var/www/tarot/backend/tarot.db', sql: 'DELETE FROM readings WHERE user_id = ?' },
+    { db: '/var/www/message/messages.db', sql: 'DELETE FROM likes WHERE user_id = ?' },
+    { db: '/var/www/message/messages.db', sql: 'DELETE FROM replies WHERE user_id = ?' },
+    { db: '/var/www/message/messages.db', sql: 'DELETE FROM messages WHERE user_id = ?' },
+  ];
+  for (const j of jobs) {
+    const d = await openDbFile(j.db);
+    try { await runDbFile(d, j.sql, [userId]); } finally { d.close(); }
+  }
+}
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+    if (targetId === req.user.id) return res.json({ success: false, error: '不能删除自己' });
+    const user = await db.get('SELECT id FROM users WHERE id = ?', [targetId]);
+    if (!user) return res.json({ success: false, error: '用户不存在' });
+    await deleteUserSiteData(targetId);
+    await db.run('BEGIN');
+    await db.run('DELETE FROM usage WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM user_bindings WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM user_logs WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM users WHERE id = ?', [targetId]);
+    await db.run('COMMIT');
+    res.json({ success: true });
+  } catch (e) {
+    try { await db.run('ROLLBACK'); } catch (e2) {}
+    console.error('删除用户失败:', e.message);
+    res.json({ success: false, error: '删除失败: ' + e.message });
+  }
+});
+
 module.exports = router;
+

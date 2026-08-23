@@ -169,11 +169,20 @@ router.post('/wechat/callback', (req, res) => {
               [msg.FromUserName]
             );
             if (!exist) {
-              await db.run(
-                "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
-                [session.userId, msg.FromUserName]
+              // 账号侧唯一性：该账号已绑定微信则拒绝
+              const myWx = await db.get(
+                "SELECT id FROM user_bindings WHERE user_id = ? AND provider = 'wechat'",
+                [session.userId]
               );
-              session.bindResult = 'bound';
+              if (myWx) {
+                session.bindResult = 'dup';
+              } else {
+                await db.run(
+                  "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
+                  [session.userId, msg.FromUserName]
+                );
+                session.bindResult = 'bound';
+              }
             } else if (exist.user_id === session.userId) {
               session.bindResult = 'already';   // 已绑定当前账号
             } else {
@@ -247,9 +256,15 @@ router.get('/api/auth/wechat/status', async (req, res) => {
     }
     if (session.bindMode) {
       // 绑定模式：不登录，只返回绑定结果
+      if (!session.bindResult) {
+        return res.json({ success: false, pending: true });
+      }
       sessions.delete(sid);
       if (session.bindResult === 'conflict') {
         return res.json({ success: false, error: '该微信已绑定其他账号' });
+      }
+      if (session.bindResult === 'dup') {
+        return res.json({ success: false, error: '该账号已绑定微信' });
       }
       if (session.bindResult === 'already') {
         return res.json({ success: true, data: { bound: true, already: true } });

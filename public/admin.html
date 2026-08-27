@@ -530,12 +530,30 @@ async function loadUsers() {
 
 async function init() {
   try {
-    const meRes = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
-    if (!meRes.ok) throw new Error('未登录');
-    const meJson = await meRes.json();
-    if (!meJson.success) throw new Error('未登录');
+    // 优先复用 auth-widget 已缓存的用户（省一次 /api/auth/me 请求）
+    // 组件 checkAuth 是异步的，轮询等待其完成（最多 1.5s）
+    function getUserWithWait(timeoutMs) {
+      return new Promise(function(resolve) {
+        if (typeof XianbaoAuth === 'undefined' || !XianbaoAuth.getUser) return resolve(null);
+        var start = Date.now();
+        (function tryGet() {
+          var u = XianbaoAuth.getUser();
+          if (u) return resolve(u);
+          if (Date.now() - start > timeoutMs) return resolve(null);
+          setTimeout(tryGet, 100);
+        })();
+      });
+    }
+    let me = await getUserWithWait(1500);
+    if (!me) {
+      const meRes = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+      if (!meRes.ok) throw new Error('未登录');
+      const meJson = await meRes.json();
+      if (!meJson.success) throw new Error('未登录');
+      me = meJson.data;
+    }
 
-    currentUser = meJson.data;
+    currentUser = me;
     const planLabel = currentUser.plan === 'vip' ? 'VIP' : '免费';
     document.getElementById('userInfo').innerHTML =
       `<strong>${escHtml(currentUser.nickname || '用户')}</strong> · ${currentUser.email} · ` +

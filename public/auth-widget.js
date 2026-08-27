@@ -62,10 +62,12 @@ checkAuth();
       state.user = res.success ? res.data : null;
       render();
       state._authChangeCbs.forEach(function(fn){fn({loggedIn:state.loggedIn,user:state.user});});
+      return state;
     }).catch(function(e){
       state.loggedIn = false; state.user = null;
       render();
       state._authChangeCbs.forEach(function(fn){fn({loggedIn:false,user:null});});
+      return state;
     });
   }
   function init(opts) {

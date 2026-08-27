@@ -77,7 +77,8 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 
     const users = await db.query(
       'SELECT u.id, u.email, u.phone, u.nickname, u.role, u.plan, u.expires_at, u.avatar_url, u.created_at, u.updated_at, ' +
-      "(SELECT COUNT(*) FROM user_bindings b WHERE b.user_id = u.id AND b.provider = 'wechat') AS wechat_bound " +
+      "(SELECT COUNT(*) FROM user_bindings b WHERE b.user_id = u.id AND b.provider = 'wechat') AS wechat_bound, " +
+      "(SELECT json_group_array(json_object('service', s.service, 'used', s.used)) FROM usage s WHERE s.user_id = u.id) AS usage_json " +
       'FROM users u ' + whereClause.replace(/WHERE /, 'WHERE ') + ' ORDER BY u.id ASC LIMIT ? OFFSET ?',
       [...params, limit, offset]
     );
@@ -85,6 +86,12 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     const countRow = await db.get(
       'SELECT COUNT(*) as c FROM users ' + whereClause, params
     );
+
+    // Parse usage_json for each user
+    users.forEach(u => {
+      try { u.usage = JSON.parse(u.usage_json || '[]'); } catch(e) { u.usage = []; }
+      delete u.usage_json;
+    });
 
     res.json({
       success: true,

@@ -490,30 +490,10 @@ async function loadUsers() {
     const { users, total, page, limit } = json.data;
     currentPage = page;
 
-    // Fetch usage for all visible users
-    try {
-      const usageRes = await fetch(`${API_BASE}/usage?all=true`, { credentials: 'include' });
-      if (usageRes.ok) {
-        const usageJson = await usageRes.json();
-        if (usageJson.success) {
-          // Group usage by user_id (for all=true admin endpoint, or just show all)
-          // For now just show current user's usage since we don't have per-user usage endpoint
-        }
-      }
-    } catch(e) {}
-
-    // Also fetch usage per user in the list
-    const usagePromises = users.map(u =>
-      fetch(`${API_BASE}/usage/admin?user_id=${u.id}`, { credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null)
-    );
-    const usageResults = await Promise.all(usagePromises);
+    // Usage data already included from users list API (SQL JOIN)
     allUsageMap = {};
-    usageResults.forEach((r, i) => {
-      if (r && r.success) {
-        allUsageMap[users[i].id] = r.data.usage;
-      }
+    users.forEach(u => {
+      allUsageMap[u.id] = u.usage || [];
     });
 
     // Stats

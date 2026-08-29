@@ -219,6 +219,8 @@ function runDbFile(db, sql, params) {
   });
 }
 async function deleteUserSiteData(userId) {
+  // 站点本地库旧数据清理（数据已迁移 auth.db，文件/表不存在时跳过不报错）
+  const fs = require('fs');
   const jobs = [
     { db: '/var/www/lingxiu/data/xianbao.db', sql: 'DELETE FROM reading_progress WHERE user_id = ?' },
     { db: '/var/www/psych-test/data/psychological_assessment.db', sql: 'DELETE FROM assessment_results WHERE user_id = ?' },
@@ -228,8 +230,11 @@ async function deleteUserSiteData(userId) {
     { db: '/var/www/message/messages.db', sql: 'DELETE FROM messages WHERE user_id = ?' },
   ];
   for (const j of jobs) {
-    const d = await openDbFile(j.db);
-    try { await runDbFile(d, j.sql, [userId]); } finally { d.close(); }
+    if (!fs.existsSync(j.db)) continue;   // 文件不存在（数据已迁 auth.db）→ 跳过
+    try {
+      const d = await openDbFile(j.db);
+      try { await runDbFile(d, j.sql, [userId]); } finally { d.close(); }
+    } catch (e) { /* 表不存在等 → 跳过 */ }
   }
 }
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
@@ -240,6 +245,15 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (!user) return res.json({ success: false, error: '用户不存在' });
     await deleteUserSiteData(targetId);
     await db.run('BEGIN');
+    // 迁移表级联删除（answers 通过 result_id 关联 assessment_results）
+    await db.run('DELETE FROM answers WHERE result_id IN (SELECT id FROM assessment_results WHERE user_id = ?)', [targetId]);
+    await db.run('DELETE FROM messages WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM replies WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM likes WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM readings WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM assessment_results WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM reading_progress WHERE user_id = ?', [targetId]);
+    await db.run('DELETE FROM user_preferences WHERE user_id = ?', [targetId]);
     await db.run('DELETE FROM usage WHERE user_id = ?', [targetId]);
     await db.run('DELETE FROM user_bindings WHERE user_id = ?', [targetId]);
     await db.run('DELETE FROM user_logs WHERE user_id = ?', [targetId]);

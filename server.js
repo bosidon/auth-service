@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: '/var/www/auth.xianbao.online/.env' });
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');

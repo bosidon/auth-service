@@ -456,14 +456,14 @@ router.post('/reading/progress', authenticateToken, async (req, res) => {
 
 // POST /api/auth/psych/result - 创建测评结果+答案
 router.post("/psych/result", authenticateToken, async (req, res) => {
-  const { assessment_id, total_score, result_summary, answers: ansArr } = req.body;
+  const { assessment_id, total_score, result_summary, result_details, answers: ansArr } = req.body;
   if (!assessment_id || !ansArr || !Array.isArray(ansArr)) {
     return res.json({ success: false, error: "参数不完整" });
   }
   try {
     const sr = await db.run(
-      "INSERT INTO assessment_results (user_id, assessment_id, start_time, total_score, result_summary) VALUES (?, ?, datetime('now','localtime'), ?, ?)",
-      [req.user.id, assessment_id, total_score || 0, result_summary || "测评完成"]
+      "INSERT INTO assessment_results (user_id, assessment_id, start_time, total_score, result_summary, result_details) VALUES (?, ?, datetime('now','localtime'), ?, ?, ?)",
+      [req.user.id, assessment_id, total_score || 0, result_summary || "测评完成", result_details || null]
     );
     const resultId = sr.lastID;
     for (const a of ansArr) {

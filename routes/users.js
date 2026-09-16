@@ -110,8 +110,8 @@ router.patch('/:id/role', authenticateToken, requireAdmin, async (req, res) => {
     const userId = parseInt(req.params.id);
     const { role } = req.body;
 
-    if (!role || !['user', 'admin'].includes(role)) {
-      return res.status(400).json({ success: false, error: '角色无效，仅支持 user / admin' });
+    if (!role || !['user', 'admin', 'sales'].includes(role)) {
+      return res.status(400).json({ success: false, error: '角色无效，仅支持 user / admin / sales' });
     }
 
     if (userId === req.user.id) {

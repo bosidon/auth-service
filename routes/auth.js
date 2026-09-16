@@ -282,12 +282,20 @@ router.post('/logout', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db.get(
-      'SELECT id, email, nickname, role, avatar_url, phone, created_at FROM users WHERE id = ?',
+      'SELECT id, email, nickname, role, avatar_url, phone, created_at, plan, expires_at FROM users WHERE id = ?',
       [req.user.id]
     );
 
     if (!user) {
       return res.status(404).json({ success: false, error: '用户不存在' });
+    }
+
+    // 会员到期主动降级为 free（admin 不受限）
+    if (user.role !== 'admin' && user.plan === 'vip' && user.expires_at
+        && new Date(user.expires_at) < new Date()) {
+      await db.run("UPDATE users SET plan = 'free' WHERE id = ?", [user.id]);
+      console.log('  User #' + user.id + ' VIP expired, downgraded to free (me)');
+      user.plan = 'free';
     }
 
     res.json({ success: true, data: user });
@@ -333,14 +341,22 @@ router.post("/verify", async (req, res) => {
     
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // 查数据库获取完整用户信息
+    // 查数据库获取完整用户信息（含会员到期时间）
     const user = await db.get(
-      "SELECT id, email, nickname, role, plan FROM users WHERE id = ?",
+      "SELECT id, email, nickname, role, plan, expires_at FROM users WHERE id = ?",
       [decoded.id]
     );
     
     if (!user) {
       return res.json({ success: false, error: "用户不存在" });
+    }
+    
+    // 会员到期主动降级为 free（admin 不受限）
+    if (user.role !== 'admin' && user.plan === 'vip' && user.expires_at
+        && new Date(user.expires_at) < new Date()) {
+      await db.run("UPDATE users SET plan = 'free' WHERE id = ?", [user.id]);
+      console.log('  User #' + user.id + ' VIP expired, downgraded to free (verify)');
+      user.plan = 'free';
     }
     
     res.json({ success: true, user });
@@ -500,6 +516,36 @@ router.get("/psych/results", authenticateToken, async (req, res) => {
 });
 
 // GET /api/auth/psych/result/:id - 获取单条结果+答案
+
+// GET /api/auth/psych/admin/results - 管理员：所有用户的测评记录（支持筛选）
+router.get("/psych/admin/results", authenticateToken, async (req, res) => {
+  if (req.user.role !== "admin") return res.json({ success: false, error: "仅管理员可操作" });
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    let whereClause = "WHERE ar.result_summary IS NOT NULL";
+    const params = [];
+    
+    if (req.query.userId) { whereClause += " AND ar.user_id = ?"; params.push(parseInt(req.query.userId)); }
+    if (req.query.assessmentId) { whereClause += " AND ar.assessment_id = ?"; params.push(parseInt(req.query.assessmentId)); }
+    if (req.query.startDate) { whereClause += " AND ar.start_time >= ?"; params.push(req.query.startDate); }
+    if (req.query.endDate) { whereClause += " AND ar.start_time <= ?"; params.push(req.query.endDate + " 23:59:59"); }
+    
+    const countRow = await db.get("SELECT COUNT(*) as total FROM assessment_results ar " + whereClause, params);
+    const total = countRow ? countRow.total : 0;
+    
+    const rows = await db.query(
+      "SELECT ar.*, u.nickname, u.email FROM assessment_results ar LEFT JOIN users u ON ar.user_id = u.id " +
+      whereClause + " ORDER BY ar.start_time DESC LIMIT ? OFFSET ?",
+      [...params, limit, offset]
+    );
+    
+    res.json({ success: true, data: rows, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+  } catch(e) { res.json({ success: false, error: e.message }); }
+});
+
+
 router.get("/psych/result/:id", authenticateToken, async (req, res) => {
   try {
     const row = await db.get("SELECT * FROM assessment_results WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);

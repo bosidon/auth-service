@@ -60,6 +60,7 @@ tr:hover td { background: #1a1a26; }
 }
 .role-badge.admin { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
 .role-badge.user { background: #1e1e2a; color: #888; border: 1px solid #2a2a3a; }
+.role-badge.sales { background: #0e749022; color: #38bdf8; border: 1px solid #0e749044; }
 .plan-badge {
   display: inline-block; padding: 3px 10px; border-radius: 20px;
   font-size: 12px; font-weight: 600;
@@ -335,14 +336,16 @@ function renderUsers(users) {
 
   tbody.innerHTML = users.map(u => {
     const isSelf = currentUser && currentUser.id === u.id;
-    const roleClass = u.role === 'admin' ? 'admin' : 'user';
+    const roleClass = u.role === 'admin' ? 'admin' : (u.role === 'sales' ? 'sales' : 'user');
+    const roleName  = u.role === 'admin' ? '管理员' : (u.role === 'sales' ? '推广员' : '普通用户');
 
     // Role dropdown
-    let roleSelect = '<span class="role-badge ' + roleClass + '">' + (u.role === 'admin' ? '管理员' : '普通用户') + '</span>';
+    let roleSelect = '<span class="role-badge ' + roleClass + '">' + roleName + '</span>';
     if (!isSelf) {
       roleSelect = '<select class="role-select" data-user-id="' + u.id + '" data-original-role="' + u.role + '">' +
         '<option value="user" ' + (u.role === 'user' ? 'selected' : '') + '>普通用户</option>' +
         '<option value="admin" ' + (u.role === 'admin' ? 'selected' : '') + '>管理员</option>' +
+        '<option value="sales" ' + (u.role === 'sales' ? 'selected' : '') + '>推广员</option>' +
       '</select>';
     }
 

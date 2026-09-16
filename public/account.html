@@ -52,6 +52,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:0.88rem;z-index:9999;display:none;animation:fadeDown .3s ease;text-align:center}
 .toast.ok{background:#065f46;color:#6ee7b7}
 .toast.err{background:#7f1d1d;color:#fca5a5}
+  /* ===== 我的推广 ===== */
+  .promo-qr{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap}
+  #promoQrBox{background:#fff;padding:8px;border-radius:10px;line-height:0;flex-shrink:0}
+  .promo-link-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .promo-link-row input{flex:1;min-width:170px;padding:8px 10px;border:1px solid #1e1e2a;border-radius:8px;background:#0d0d12;color:#a78bfa;font-size:0.76rem;outline:none}
+  .promo-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .promo-stat{background:#0d0d12;border:1px solid #1e1e2a;border-radius:10px;padding:12px 6px;text-align:center}
+  .promo-num{font-size:1.3rem;font-weight:600;color:#a78bfa;line-height:1.2}
+  .promo-label{font-size:0.7rem;color:#94a3b8;margin-top:4px}
+  @media(max-width:480px){.promo-qr{flex-direction:column}}
 @keyframes fadeDown{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 </head>
@@ -117,6 +127,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
       <a href="#" onclick="location.href=MAIN+'/vip.html';return false" class="btn btn-primary btn-sm" style="text-decoration:none">升级VIP</a>
     </div>
   </div>
+
+  <!-- 我的推广（仅推广员可见）-->
+  <div class="card" id="promoCard" style="display:none">
+    <div class="card-title">📣 我的推广</div>
+    <div class="promo-qr">
+      <div id="promoQrBox"></div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:6px">我的专属推广链接</div>
+        <div class="promo-link-row">
+          <input id="promoLink" readonly>
+          <button class="btn btn-outline btn-sm" onclick="copyPromoLink()">复制</button>
+        </div>
+        <div style="font-size:0.72rem;color:#64748b;margin-top:8px">好友通过此链接（或扫码）注册，即计入你的推广</div>
+      </div>
+    </div>
+    <div class="promo-stats">
+      <div class="promo-stat"><div class="promo-num" id="promoTotal">0</div><div class="promo-label">已邀请</div></div>
+      <div class="promo-stat"><div class="promo-num" id="promoVip">0</div><div class="promo-label">VIP 人数</div></div>
+      <div class="promo-stat"><div class="promo-num" id="promoSales">0</div><div class="promo-label">推广员人数</div></div>
+    </div>
+  </div>
 </div>
 
 <div id="bindModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeBindModal()">
@@ -131,6 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 <div class="toast" id="toast"></div>
 
 <script src="https://xianbao.love/assets/xianbao/auth-widget.js"></script>
+<script src="https://xianbao.love/assets/xianbao/qrcode.min.js"></script>
 <script>
 var AUTH='',MAIN='https://xianbao.love';
 function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast '+(t||'ok');e.style.display='block';setTimeout(function(){e.style.display='none'},3000)}
@@ -142,10 +174,41 @@ XianbaoAuth.checkAuth().then(function(){
   loadData();
 });
 
+function loadPromo(uid){
+  var card=document.getElementById('promoCard');
+  if(!card) return;
+  card.style.display='';
+  var link=MAIN+'/r/'+uid;
+  document.getElementById('promoLink').value=link;
+  var box=document.getElementById('promoQrBox');
+  if(window.QRCode && box){
+    box.innerHTML='';
+    new QRCode(box,{text:link,width:110,height:110,colorDark:'#14141e',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }
+  apiGet('/auth/my-referrals').then(function(r){
+    if(r&&r.success&&r.data){
+      document.getElementById('promoTotal').textContent=r.data.total;
+      document.getElementById('promoVip').textContent=r.data.vip;
+      document.getElementById('promoSales').textContent=r.data.sales;
+    }
+  });
+}
+function copyPromoLink(){
+  var i=document.getElementById('promoLink');
+  if(!i) return;
+  i.removeAttribute('readonly'); i.focus(); i.select(); i.setSelectionRange(0,999);
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  i.setAttribute('readonly','readonly');
+  if(navigator.clipboard){ navigator.clipboard.writeText(i.value).then(function(){showToast('✅ 推广链接已复制')}).catch(function(){showToast(ok?'✅ 已复制':'请手动复制','ok')}); }
+  else { showToast(ok?'✅ 推广链接已复制':'请手动复制','ok'); }
+}
+
 function loadData(){
   apiGet('/auth/me').then(function(d){
     if(!d.success)return;
     var u=d.data;
+    if(u.role==='sales'){ loadPromo(u.id); }   // 仅推广员显示推广卡片
     document.getElementById('editNickname').value=(u.nickname&&u.nickname!=='微信用户')?u.nickname:'';
     loadBindings();
     document.getElementById('bindPhoneVal').textContent=u.phone||'未绑定';

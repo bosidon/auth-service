@@ -8,6 +8,7 @@
  * - GET  /wechat/oauth-callback    OAuth 回调：code换token→建账号→跳回原页面
  */
 const express = require('express');
+const { applyReferral } = require('../utils/referral');
 const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -108,7 +109,7 @@ function parseWechatXml(xml) {
 }
 
 /* 根据 openid 查绑定；无则创建微信用户。有昵称头像则覆盖 users 表 */
-async function findOrCreateUser(openid, nickname, avatar) {
+async function findOrCreateUser(openid, nickname, avatar, req) {
   const bind = await db.get(
     "SELECT user_id FROM user_bindings WHERE provider = 'wechat' AND identifier = ?",
     [openid]
@@ -136,6 +137,8 @@ async function findOrCreateUser(openid, nickname, avatar) {
     "INSERT INTO user_bindings (user_id, provider, identifier) VALUES (?, 'wechat', ?)",
     [r.lastID, openid]
   );
+  // 推广归因（微信首次登录自动注册）
+  if (req) await applyReferral(req, r.lastID);
   const u2 = await db.get('SELECT id, email, nickname, avatar_url, role, plan FROM users WHERE id = ?', [r.lastID]);
   if (u2 && !u2.nickname) u2.nickname = '微信用户';
   return u2;
@@ -203,7 +206,7 @@ router.post('/wechat/callback', (req, res) => {
             } catch (e) {
               console.error('[wx-login] 关注用户信息异常:', e.message);
             }
-            const user = await findOrCreateUser(msg.FromUserName, nickname, avatar);
+            const user = await findOrCreateUser(msg.FromUserName, nickname, avatar, req);
             session.userId = user.id;
             session.openid = msg.FromUserName;
           }
@@ -337,7 +340,7 @@ router.get('/wechat/oauth-callback', async (req, res) => {
       console.error('[wx-login] userinfo异常:', e.message);
     }
     // 查绑定/创建 + 覆盖昵称头像
-    const user = await findOrCreateUser(j.openid, nickname, avatar);
+    const user = await findOrCreateUser(j.openid, nickname, avatar, req);
     const token = generateToken(user);
     setTokenCookie(res, token);
     // 跳回原页面

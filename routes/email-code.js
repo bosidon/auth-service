@@ -1,4 +1,5 @@
 const express = require('express');
+const { applyReferral } = require('../utils/referral');
 const router = express.Router();
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
@@ -97,6 +98,7 @@ router.post('/login-code', async (req, res) => {
         [email, randomHash, nick]
       );
       user = { id: result.lastID, email, nickname: nick, role: 'user', plan: 'free' };
+      await applyReferral(req, result.lastID);
     }
 
     const token = generateToken(user);

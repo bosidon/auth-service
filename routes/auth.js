@@ -1,4 +1,5 @@
 const express = require('express');
+const { applyReferral } = require('../utils/referral');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
@@ -32,6 +33,9 @@ router.post('/register', async (req, res) => {
     );
 
     const userId = result.lastID;
+
+    // 推广归因（老带新：记录推荐人）
+    await applyReferral(req, userId);
 
     // 生成token
     const user = { id: userId, email, nickname: nickname || email.split('@')[0] };
@@ -279,6 +283,23 @@ router.post('/logout', authenticateToken, async (req, res) => {
 });
 
 // ===== 获取当前用户 =====
+// ===== 我的推广统计（仅推广员 role=sales）=====
+router.get('/my-referrals', authenticateToken, async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const me = await db.get('SELECT role FROM users WHERE id = ?', [uid]);
+    if (!me || me.role !== 'sales') {
+      return res.json({ success: false, error: '仅推广员可查看' });
+    }
+    const total = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ?', [uid])).c;
+    const vip = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND plan = ?', [uid, 'vip'])).c;
+    const sales = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND role = ?', [uid, 'sales'])).c;
+    res.json({ success: true, data: { total, vip, sales, link: 'https://xianbao.love/r/' + uid } });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await db.get(

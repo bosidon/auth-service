@@ -413,7 +413,8 @@ function renderUsers(users) {
     sel.addEventListener('change', function() {
       const userId = this.dataset.userId;
       const newRole = this.value;
-      if (!confirm(`确定将用户 #${userId} 的角色改为「${newRole === 'admin' ? '管理员' : '普通用户'}」？`)) {
+      const roleLabel = newRole === 'admin' ? '管理员' : (newRole === 'sales' ? '推广员' : '普通用户');
+      if (!confirm(`确定将用户 #${userId} 的角色改为「${roleLabel}」？`)) {
         this.value = this.dataset.originalRole;
         return;
       }

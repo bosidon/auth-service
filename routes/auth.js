@@ -324,7 +324,8 @@ router.get('/me', authenticateToken, async (req, res) => {
     // 会员到期主动降级为 free（admin 不受限）
     if (user.role !== 'admin' && user.plan === 'vip' && user.expires_at
         && new Date(user.expires_at) < new Date()) {
-      await db.run("UPDATE users SET plan = 'free' WHERE id = ?", [user.id]);
+      await db.run("UPDATE users SET plan = 'free', role = CASE WHEN role = 'sales' THEN 'user' ELSE role END WHERE id = ?", [user.id]);
+      if (user.role === 'sales') user.role = 'user';   // 合伙人资格随 VIP 到期终止
       console.log('  User #' + user.id + ' VIP expired, downgraded to free (me)');
       user.plan = 'free';
     }
@@ -385,7 +386,8 @@ router.post("/verify", async (req, res) => {
     // 会员到期主动降级为 free（admin 不受限）
     if (user.role !== 'admin' && user.plan === 'vip' && user.expires_at
         && new Date(user.expires_at) < new Date()) {
-      await db.run("UPDATE users SET plan = 'free' WHERE id = ?", [user.id]);
+      await db.run("UPDATE users SET plan = 'free', role = CASE WHEN role = 'sales' THEN 'user' ELSE role END WHERE id = ?", [user.id]);
+      if (user.role === 'sales') user.role = 'user';   // 合伙人资格随 VIP 到期终止
       console.log('  User #' + user.id + ' VIP expired, downgraded to free (verify)');
       user.plan = 'free';
     }

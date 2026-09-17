@@ -19,8 +19,8 @@ async function getEffectivePlan(userId) {
   if (!user) return 'free';
   if (user.plan !== 'vip' || !user.expires_at) return user.plan || 'free';
   if (user.expires_at < new Date().toISOString()) {
-    await db.run("UPDATE users SET plan = 'free' WHERE id = ?", [userId]);
-    console.log('  User #' + userId + ' VIP expired, downgraded to free');
+    await db.run("UPDATE users SET plan = 'free', role = CASE WHEN role = 'sales' THEN 'user' ELSE role END WHERE id = ?", [userId]);
+    console.log('  User #' + userId + ' VIP expired, downgraded to free (合伙人资格同步终止)');
     return 'free';
   }
   return 'vip';

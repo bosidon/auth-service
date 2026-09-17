@@ -192,7 +192,10 @@ tr:hover td { background: #1a1a26; }
 <div class="container">
   <div class="page-header" id="pageHeader">
     <h1>⚙️ 管理后台</h1>
-    <div class="user-info" id="userInfo">加载中…</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn" onclick="openCommModal()" style="background:#7c3aed;white-space:nowrap;">💰 佣金结算</button>
+      <div class="user-info" id="userInfo">加载中…</div>
+    </div>
   </div>
 
   <div class="stats-bar" id="statsBar">
@@ -279,32 +282,37 @@ tr:hover td { background: #1a1a26; }
   </div>
 </div>
 
-<!-- ===== 推广佣金管理 ===== -->
-<div class="page-header" style="margin-top:40px;">
-  <h1 style="font-size:1.15rem;">💰 推广佣金</h1>
-  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-    <span style="color:#94a3b8;font-size:13px;">待结算 <b id="commPendingTotal" style="color:#fbbf24;">¥0.00</b></span>
-    <span style="color:#94a3b8;font-size:13px;">已结算 <b id="commSettledTotal" style="color:#34d399;">¥0.00</b></span>
-    <select id="commReferrerFilter" class="role-select" style="max-width:180px;">
-      <option value="">全部推荐人</option>
-    </select>
-    <select id="commStatusFilter" class="role-select">
-      <option value="pending">待结算</option>
-      <option value="settled">已结算</option>
-      <option value="cancelled">已取消</option>
-      <option value="all">全部</option>
-    </select>
-    <button class="btn-outline" onclick="loadCommissions()">刷新</button>
-    <button class="btn" onclick="settleAll()" style="background:#059669;">全部结算</button>
+<!-- ===== 推广佣金结算（弹窗）===== -->
+<div id="commModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;align-items:center;justify-content:center;padding:18px;" onclick="if(event.target===this)closeCommModal()">
+  <div style="background:#0f0f16;border:1px solid #1e1e2a;border-radius:16px;width:min(1240px,96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid #1e1e2a;flex-shrink:0;">
+      <span style="font-size:16px;font-weight:600;color:#e0e0e0;">💰 推广佣金结算</span>
+      <span onclick="closeCommModal()" style="cursor:pointer;color:#64748b;font-size:20px;line-height:1;">&#10005;</span>
+    </div>
+    <div style="padding:14px 22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1e1e2a;flex-shrink:0;">
+      <span style="color:#94a3b8;font-size:13px;">待结算 <b id="commPendingTotal" style="color:#fbbf24;">¥0.00</b></span>
+      <span style="color:#94a3b8;font-size:13px;">已结算 <b id="commSettledTotal" style="color:#34d399;">¥0.00</b></span>
+      <select id="commReferrerFilter" class="role-select" style="max-width:190px;">
+        <option value="">全部推荐人</option>
+      </select>
+      <select id="commStatusFilter" class="role-select">
+        <option value="pending">待结算</option>
+        <option value="settled">已结算</option>
+        <option value="cancelled">已取消</option>
+        <option value="all">全部</option>
+      </select>
+      <button class="btn-outline" onclick="loadCommissions()">刷新</button>
+      <button class="btn" onclick="settleAll()" style="background:#059669;">全部结算</button>
+    </div>
+    <div style="flex:1;overflow:auto;padding:0 22px 22px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr><th>ID</th><th>时间</th><th>推荐人</th><th>被推荐人</th><th>套餐</th><th>订单金额</th><th>佣金(60%)</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody id="commTbody"><tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">加载中…</td></tr></tbody>
+      </table>
+    </div>
   </div>
-</div>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr><th>ID</th><th>时间</th><th>推荐人</th><th>被推荐人</th><th>套餐</th><th>订单金额</th><th>佣金(60%)</th><th>状态</th><th>操作</th></tr>
-    </thead>
-    <tbody id="commTbody"><tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">加载中…</td></tr></tbody>
-  </table>
 </div>
 
 <!-- 结算确认弹窗 -->
@@ -518,6 +526,14 @@ function openSettleModal(title, html, onOk) {
   };
 }
 function closeSettleModal() { document.getElementById('settleModal').style.display = 'none'; }
+
+function openCommModal() {
+  const m = document.getElementById('commModal');
+  m.style.display = 'flex';
+  loadCommissions();
+  loadCommReferrers();
+}
+function closeCommModal() { document.getElementById('commModal').style.display = 'none'; }
 
 async function loadCommReferrers() {
   try {

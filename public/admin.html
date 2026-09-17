@@ -67,12 +67,12 @@ tr:hover td { background: #1a1a26; }
 }
 .plan-badge.vip { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
 .plan-badge.free { background: #1e1e2a; color: #888; border: 1px solid #2a2a3a; }
-.role-select, .plan-select {
+.role-select, .plan-select, .comm-select {
   background: #1a1a26; color: #e0e0e0; border: 1px solid #2a2a3a;
   border-radius: 6px; padding: 5px 10px; font-size: 13px; cursor: pointer;
   outline: none;
 }
-.role-select:focus, .plan-select:focus { border-color: #7c3aed; }
+.role-select:focus, .plan-select:focus, .comm-select:focus { border-color: #7c3aed; }
 .toolbar {
   display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: nowrap;
 }
@@ -292,10 +292,10 @@ tr:hover td { background: #1a1a26; }
     <div style="padding:14px 22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1e1e2a;flex-shrink:0;">
       <span style="color:#94a3b8;font-size:13px;">待结算 <b id="commPendingTotal" style="color:#fbbf24;">¥0.00</b></span>
       <span style="color:#94a3b8;font-size:13px;">已结算 <b id="commSettledTotal" style="color:#34d399;">¥0.00</b></span>
-      <select id="commReferrerFilter" class="role-select" style="max-width:190px;">
+      <select id="commReferrerFilter" class="comm-select" style="max-width:190px;">
         <option value="">全部推荐人</option>
       </select>
-      <select id="commStatusFilter" class="role-select">
+      <select id="commStatusFilter" class="comm-select">
         <option value="pending">待结算</option>
         <option value="settled">已结算</option>
         <option value="cancelled">已取消</option>
@@ -460,7 +460,7 @@ function renderUsers(users) {
   }).join('');
 
   // Bind role change
-  document.querySelectorAll('.role-select').forEach(sel => {
+  document.querySelectorAll('.role-select[data-user-id]').forEach(sel => {
     sel.addEventListener('change', function() {
       const userId = this.dataset.userId;
       const newRole = this.value;
@@ -474,7 +474,7 @@ function renderUsers(users) {
   });
 
   // Bind plan change
-  document.querySelectorAll('.plan-select').forEach(function(sel) {
+  document.querySelectorAll('.plan-select[data-user-id]').forEach(function(sel) {
     sel.addEventListener('change', function() {
       var userId = this.dataset.userId;
       var newPlan = this.value;
@@ -540,17 +540,20 @@ async function loadCommReferrers() {
     const r = await fetch(API_BASE + '/users/commissions/referrers', { credentials: 'include' });
     const j = await r.json();
     const sel = document.getElementById('commReferrerFilter');
-    if (!sel || !j.success) return;
+    if (!sel) return;
+    if (!j.success) { showToast('❌ 推荐人列表加载失败：' + (j.error || '未知错误'), 'error'); return; }
+    const list = j.data || [];
     _commReferrerNames = {};
-    j.data.forEach(x => { _commReferrerNames[String(x.referrer_id)] = x.nickname || ('#' + x.referrer_id); });
+    list.forEach(x => { _commReferrerNames[String(x.referrer_id)] = x.nickname || ('用户#' + x.referrer_id); });
     const cur = String(_commReferrerFilter || '');
-    sel.innerHTML = '<option value=""' + (cur === '' ? ' selected' : '') + '>全部推荐人</option>' +
-      j.data.map(x => '<option value="' + x.referrer_id + '"' +
+    const emptyOpt = list.length ? '' : '<option value="" disabled>（暂无推广佣金记录）</option>';
+    sel.innerHTML = '<option value=""' + (cur === '' ? ' selected' : '') + '>全部推荐人</option>' + emptyOpt +
+      list.map(x => '<option value="' + x.referrer_id + '"' +
         (String(x.referrer_id) === cur ? ' selected' : '') + '>' +
-        (x.nickname || ('#' + x.referrer_id)) +
+        (x.nickname || ('用户#' + x.referrer_id)) +
         '（' + x.cnt + ' 条 / 待结 ¥' + Number(x.pending || 0).toFixed(2) + '）</option>').join('');
     sel.value = cur;   // 双保险
-  } catch (e) { console.error(e); }
+  } catch (e) { console.error(e); showToast('❌ 推荐人列表加载异常：' + e.message, 'error'); }
 }
 
 async function loadCommissions() {
@@ -561,7 +564,11 @@ async function loadCommissions() {
     const j = await r.json();
     const tb = document.getElementById('commTbody');
     if (!tb) return;
-    if (!j.success) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#fca5a5;padding:20px;">' + (j.error||'加载失败') + '</td></tr>'; return; }
+    if (!j.success) {
+      tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#fca5a5;padding:20px;">❌ ' + (j.error||'加载失败') + '</td></tr>';
+      showToast('❌ 佣金列表加载失败：' + (j.error || '未知错误'), 'error');
+      return;
+    }
     const t = j.totals || {};
     document.getElementById('commPendingTotal').textContent = '¥' + ((t.pending||0)).toFixed(2);
     document.getElementById('commSettledTotal').textContent = '¥' + ((t.settled||0)).toFixed(2);
@@ -605,7 +612,7 @@ async function settleComm(id) {
 
 async function settleAll() {
   const rf = _commReferrerFilter;
-  const scopeName = rf ? (_commReferrerNames[String(rf)] || ('#' + rf)) : '全部推荐人';
+  const scopeName = rf ? (_commReferrerNames[String(rf)] || ('用户#' + rf)) : '全部推荐人';
   try {
     const r = await fetch(API_BASE + '/users/commissions/list?status=pending' + (rf ? '&referrer_id=' + rf : ''), { credentials: 'include' });
     const j = await r.json();

@@ -294,7 +294,17 @@ router.get('/my-referrals', authenticateToken, async (req, res) => {
     const total = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ?', [uid])).c;
     const vip = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND plan = ?', [uid, 'vip'])).c;
     const sales = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND role = ?', [uid, 'sales'])).c;
-    res.json({ success: true, data: { total, vip, sales, link: 'https://xianbao.love/r/' + uid } });
+    // 佣金统计（60% 分成，阶段1记账制）
+    const cPending = (await db.get("SELECT COALESCE(SUM(commission),0) s FROM referral_commissions WHERE referrer_id = ? AND status = 'pending'", [uid])).s;
+    const cSettled = (await db.get("SELECT COALESCE(SUM(commission),0) s FROM referral_commissions WHERE referrer_id = ? AND status = 'settled'", [uid])).s;
+    const cCount = (await db.get("SELECT COUNT(*) c FROM referral_commissions WHERE referrer_id = ? AND status != 'cancelled'", [uid])).c;
+    res.json({ success: true, data: {
+      total, vip, sales,
+      commissionPending: Math.round(cPending * 100) / 100,
+      commissionSettled: Math.round(cSettled * 100) / 100,
+      commissionCount: cCount,
+      link: 'https://xianbao.love/r/' + uid
+    } });
   } catch (e) {
     res.json({ success: false, error: e.message });
   }

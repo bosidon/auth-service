@@ -1,9 +1,13 @@
 /**
- * 推广归因（老带新）
- * 从请求 cookie(xb_ref) / body.ref / query.ref 解析推广人 userid
- * 新用户创建后写入 users.referred_by
+ * 推广归因 + 阶段1奖励（老带新）
+ *  - 归因：新用户 referred_by = 推广人
+ *  - 奖励：双向赠送 VIP 天数（推荐人 +3 / 新人 +3）
+ *  - 佣金：被推荐人付费时生成佣金记录（见 routes/users.js）
  */
 const db = require('../config/database');
+
+const REWARD_DAYS = 3;        // 邀请注册：双方各得 VIP 天数
+const COMMISSION_RATE = 0.6;  // 转化佣金比例（60%）
 
 function parseRefId(req) {
   try {
@@ -17,14 +21,51 @@ function parseRefId(req) {
   } catch (e) { return null; }
 }
 
+/** 给用户加 N 天 VIP（保留当前未到期的剩余时长；admin 跳过） */
+async function grantVipDays(userId, days) {
+  try {
+    const u = await db.get('SELECT id, role, plan, expires_at FROM users WHERE id = ?', [userId]);
+    if (!u || u.role === 'admin') return null;
+    const now = Date.now();
+    const cur = (u.plan === 'vip' && u.expires_at) ? new Date(u.expires_at).getTime() : 0;
+    const base = (cur && cur > now) ? cur : now;
+    const newExp = new Date(base + days * 86400000).toISOString().replace('T', ' ').slice(0, 19);
+    await db.run("UPDATE users SET plan = 'vip', expires_at = ? WHERE id = ?", [newExp, userId]);
+    return newExp;
+  } catch (e) {
+    console.error('grantVipDays error:', e.message);
+    return null;
+  }
+}
+
 async function applyReferral(req, newUserId) {
   try {
     const rid = parseRefId(req);
     if (!rid || Number(rid) === Number(newUserId)) return null;
-    const rep = await db.get('SELECT id FROM users WHERE id = ?', [rid]);
+    const rep = await db.get('SELECT id, role FROM users WHERE id = ?', [rid]);
     if (!rep) return null;
-    await db.run('UPDATE users SET referred_by = ? WHERE id = ?', [rep.id, newUserId]);
-    console.log('  referral: user #' + newUserId + ' <- #' + rep.id);
+
+    // 1) 写入归因（仅首次）
+    await db.run('UPDATE users SET referred_by = ? WHERE id = ? AND (referred_by IS NULL OR referred_by = 0)',
+                 [rep.id, newUserId]);
+    const chk = await db.get('SELECT referred_by FROM users WHERE id = ?', [newUserId]);
+    if (!chk || Number(chk.referred_by) !== Number(rep.id)) return null;   // 已被他人归因，不重复奖励
+
+    // 2) 双向赠送 VIP 天数
+    const expRef = await grantVipDays(rep.id, REWARD_DAYS);
+    const expNew = await grantVipDays(newUserId, REWARD_DAYS);
+
+    // 3) 记录奖励流水
+    try {
+      await db.run(
+        "INSERT INTO referral_rewards (referrer_id, referee_id, event, side, reward_type, reward_days) VALUES (?,?,'register','referrer','vip_days',?)",
+        [rep.id, newUserId, REWARD_DAYS]);
+      await db.run(
+        "INSERT INTO referral_rewards (referrer_id, referee_id, event, side, reward_type, reward_days) VALUES (?,?,'register','referee','vip_days',?)",
+        [rep.id, newUserId, REWARD_DAYS]);
+    } catch (e) { console.error('reward log error:', e.message); }
+
+    console.log('  referral: user #' + newUserId + ' <- #' + rep.id + ' (+' + REWARD_DAYS + 'd both)');
     return rep.id;
   } catch (e) {
     console.error('referral error:', e.message);
@@ -32,4 +73,26 @@ async function applyReferral(req, newUserId) {
   }
 }
 
-module.exports = { applyReferral, parseRefId };
+/** 被推荐人付费 → 生成佣金记录（60%） */
+async function recordCommission(refereeId, plan, amount) {
+  try {
+    const u = await db.get('SELECT referred_by FROM users WHERE id = ?', [refereeId]);
+    if (!u || !u.referred_by) return null;
+    // 防重复：同一被推荐人只记一次佣金（首次付费）
+    const existed = await db.get(
+      "SELECT id FROM referral_commissions WHERE referee_id = ? AND status != 'cancelled'", [refereeId]);
+    if (existed) return null;
+    const commission = Math.round(Number(amount || 0) * COMMISSION_RATE * 100) / 100;
+    if (commission <= 0) return null;
+    await db.run(
+      "INSERT INTO referral_commissions (referrer_id, referee_id, plan, order_amount, rate, commission, status) VALUES (?,?,?,?,?,?,'pending')",
+      [u.referred_by, refereeId, plan || '', Number(amount || 0), COMMISSION_RATE, commission]);
+    console.log('  commission: referrer #' + u.referred_by + ' +' + commission + ' (from #' + refereeId + ')');
+    return commission;
+  } catch (e) {
+    console.error('recordCommission error:', e.message);
+    return null;
+  }
+}
+
+module.exports = { applyReferral, parseRefId, grantVipDays, recordCommission, REWARD_DAYS, COMMISSION_RATE };

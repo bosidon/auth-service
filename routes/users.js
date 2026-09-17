@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { recordCommission } = require('../utils/referral');
 const sqlite3 = require('sqlite3').verbose();
 
 // ===== 获取用户操作日志 =====
@@ -162,6 +163,12 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
       [dbPlan, expiresAt, userId]
     );
 
+    // 推广佣金（首次付费才记录）：年卡 128 / 永久 256
+    if (plan !== 'free') {
+      const amount = plan === 'lifetime' ? 256 : 128;
+      await recordCommission(userId, plan, amount);
+    }
+
     const user = await db.get(
       'SELECT id, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
       [userId]
@@ -193,6 +200,9 @@ router.post('/:id/renew', authenticateToken, requireAdmin, async (req, res) => {
       "UPDATE users SET expires_at = ?, updated_at = datetime('now') WHERE id = ?",
       [newExpiresAt, userId]
     );
+
+    // 推广佣金（续卡 128）
+    await recordCommission(userId, 'yearly_renew', 128);
 
     const updated = await db.get(
       'SELECT id, email, nickname, role, plan, expires_at, created_at FROM users WHERE id = ?',
@@ -237,6 +247,53 @@ async function deleteUserSiteData(userId) {
     } catch (e) { /* 表不存在等 → 跳过 */ }
   }
 }
+// ===== 推广佣金管理（管理员）=====
+router.get('/commissions/list', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const status = req.query.status || 'all';
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (status !== 'all') { where += ' AND c.status = ?'; params.push(status); }
+    const rows = await db.query(
+      'SELECT c.*, ur.nickname AS referrer_name, ur.email AS referrer_email, ' +
+      'ue.nickname AS referee_name, ue.email AS referee_email ' +
+      'FROM referral_commissions c ' +
+      'LEFT JOIN users ur ON c.referrer_id = ur.id ' +
+      'LEFT JOIN users ue ON c.referee_id = ue.id ' + where +
+      ' ORDER BY c.id DESC LIMIT 300',
+      params
+    );
+    const t = await db.get(
+      "SELECT COALESCE(SUM(CASE WHEN status='pending' THEN commission ELSE 0 END),0) pending, " +
+      "COALESCE(SUM(CASE WHEN status='settled' THEN commission ELSE 0 END),0) settled, " +
+      "COUNT(*) total FROM referral_commissions WHERE status != 'cancelled'"
+    );
+    res.json({ success: true, data: rows, totals: t });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+router.patch('/commissions/:id/settle', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await db.run("UPDATE referral_commissions SET status = 'settled', settled_at = datetime('now') WHERE id = ?", [id]);
+    res.json({ success: true, message: '已标记为已结算' });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+router.patch('/commissions/:id/cancel', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await db.run("UPDATE referral_commissions SET status = 'cancelled' WHERE id = ?", [id]);
+    res.json({ success: true, message: '已取消该佣金' });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const targetId = parseInt(req.params.id);

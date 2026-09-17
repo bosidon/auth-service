@@ -61,6 +61,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
   .promo-stat{background:#0d0d12;border:1px solid #1e1e2a;border-radius:10px;padding:12px 6px;text-align:center}
   .promo-num{font-size:1.3rem;font-weight:600;color:#a78bfa;line-height:1.2}
   .promo-label{font-size:0.7rem;color:#94a3b8;margin-top:4px}
+  .promo-commission{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)}
+  .promo-comm-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:0.82rem}
+  .promo-comm-label{color:#94a3b8}
+  .promo-comm-val{font-weight:600;font-size:1rem}
+  .promo-comm-val.pending{color:#fbbf24}
+  .promo-comm-val.settled{color:#34d399}
+  .promo-comm-tip{font-size:0.7rem;color:#64748b;margin-top:8px}
   @media(max-width:480px){.promo-qr{flex-direction:column}}
 @keyframes fadeDown{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
@@ -147,6 +154,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
       <div class="promo-stat"><div class="promo-num" id="promoVip">0</div><div class="promo-label">VIP 人数</div></div>
       <div class="promo-stat"><div class="promo-num" id="promoSales">0</div><div class="promo-label">推广员人数</div></div>
     </div>
+    <div class="promo-commission">
+      <div class="promo-comm-item">
+        <span class="promo-comm-label">待结算佣金</span>
+        <span class="promo-comm-val pending">¥<span id="promoCommPending">0</span></span>
+      </div>
+      <div class="promo-comm-item">
+        <span class="promo-comm-label">已结算佣金</span>
+        <span class="promo-comm-val settled">¥<span id="promoCommSettled">0</span></span>
+      </div>
+      <div class="promo-comm-tip">转化 1 人分成 60%，结算后微信转账</div>
+    </div>
   </div>
 </div>
 
@@ -161,7 +179,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="https://xianbao.love/assets/xianbao/auth-widget.js"></script>
+<script src="https://xianbao.love/assets/xianbao/auth-widget.js?v=20260917"></script>
 <script src="https://xianbao.love/assets/xianbao/qrcode.min.js"></script>
 <script>
 var AUTH='',MAIN='https://xianbao.love';
@@ -190,6 +208,9 @@ function loadPromo(uid){
       document.getElementById('promoTotal').textContent=r.data.total;
       document.getElementById('promoVip').textContent=r.data.vip;
       document.getElementById('promoSales').textContent=r.data.sales;
+      var cp=document.getElementById('promoCommPending'), cs=document.getElementById('promoCommSettled');
+      if(cp) cp.textContent=(r.data.commissionPending||0).toFixed(2);
+      if(cs) cs.textContent=(r.data.commissionSettled||0).toFixed(2);
     }
   });
 }

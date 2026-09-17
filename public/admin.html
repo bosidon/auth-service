@@ -185,7 +185,7 @@ tr:hover td { background: #1a1a26; }
 
 <div id="xianbao-topbar"></div>
 <script src="/assets/xianbao/xianbao-topbar.js"></script>
-<script src="/assets/xianbao/auth-widget.js"></script>
+<script src="/assets/xianbao/auth-widget.js?v=20260917"></script>
 
 <div class="topbar-spacer"></div>
 
@@ -277,6 +277,30 @@ tr:hover td { background: #1a1a26; }
       <a href="javascript:void(0)" onclick="if(typeof XianbaoAuth!=='undefined'&&XianbaoAuth.showLogin){XianbaoAuth.showLogin();}else{location.href='/auth/';}" class="btn" style="display:inline-block; text-decoration:none;">前往登录</a>
     </div>
   </div>
+</div>
+
+<!-- ===== 推广佣金管理 ===== -->
+<div class="page-header" style="margin-top:40px;">
+  <h1 style="font-size:1.15rem;">💰 推广佣金</h1>
+  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+    <span style="color:#94a3b8;font-size:13px;">待结算 <b id="commPendingTotal" style="color:#fbbf24;">¥0.00</b></span>
+    <span style="color:#94a3b8;font-size:13px;">已结算 <b id="commSettledTotal" style="color:#34d399;">¥0.00</b></span>
+    <select id="commStatusFilter" class="role-select">
+      <option value="pending">待结算</option>
+      <option value="settled">已结算</option>
+      <option value="cancelled">已取消</option>
+      <option value="all">全部</option>
+    </select>
+    <button class="btn-outline" onclick="loadCommissions()">刷新</button>
+  </div>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>时间</th><th>推荐人</th><th>被推荐人</th><th>套餐</th><th>订单金额</th><th>佣金(60%)</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody id="commTbody"><tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">加载中…</td></tr></tbody>
+  </table>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -458,6 +482,54 @@ async function updateField(userId, field, value, selectEl, originalAttr) {
 }
 
 
+// ===== 推广佣金 =====
+async function loadCommissions() {
+  const st = (document.getElementById('commStatusFilter') || {}).value || 'pending';
+  try {
+    const r = await fetch(API_BASE + '/users/commissions/list?status=' + st, { credentials: 'include' });
+    const j = await r.json();
+    const tb = document.getElementById('commTbody');
+    if (!tb) return;
+    if (!j.success) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#fca5a5;padding:20px;">' + (j.error||'加载失败') + '</td></tr>'; return; }
+    const t = j.totals || {};
+    document.getElementById('commPendingTotal').textContent = '¥' + ((t.pending||0)).toFixed(2);
+    document.getElementById('commSettledTotal').textContent = '¥' + ((t.settled||0)).toFixed(2);
+    if (!j.data.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">📭 暂无佣金记录</td></tr>'; return; }
+    const stMap = { pending: '待结算', settled: '已结算', cancelled: '已取消' };
+    const stColor = { pending: '#fbbf24', settled: '#34d399', cancelled: '#888' };
+    tb.innerHTML = j.data.map(c => '<tr>' +
+      '<td>' + c.id + '</td>' +
+      '<td style="font-size:12px;color:#888;">' + String(c.created_at||'').slice(0,16) + '</td>' +
+      '<td>' + (c.referrer_name || ('#'+c.referrer_id)) + '</td>' +
+      '<td>' + (c.referee_name || ('#'+c.referee_id)) + '</td>' +
+      '<td>' + (c.plan || '-') + '</td>' +
+      '<td>¥' + Number(c.order_amount||0).toFixed(2) + '</td>' +
+      '<td style="color:#a78bfa;font-weight:600;">¥' + Number(c.commission||0).toFixed(2) + '</td>' +
+      '<td style="color:' + (stColor[c.status]||'#888') + ';font-size:12px;">' + (stMap[c.status]||c.status) + '</td>' +
+      '<td>' + (c.status === 'pending'
+        ? '<button style="padding:3px 10px;font-size:12px;border:none;border-radius:6px;background:#059669;color:#fff;cursor:pointer;margin-right:4px;" onclick="settleComm(' + c.id + ')">已结算</button>' +
+          '<button style="padding:3px 10px;font-size:12px;border:none;border-radius:6px;background:#374151;color:#9ca3af;cursor:pointer;" onclick="cancelComm(' + c.id + ')">取消</button>'
+        : '-') + '</td>' +
+    '</tr>').join('');
+  } catch (e) { console.error('loadCommissions', e); }
+}
+
+async function settleComm(id) {
+  if (!confirm('确认已向推荐人完成转账？\n（将标记为「已结算」）')) return;
+  const r = await fetch(API_BASE + '/users/commissions/' + id + '/settle', { method: 'PATCH', credentials: 'include' });
+  const j = await r.json();
+  if (j.success) { showToast('✅ ' + j.message); loadCommissions(); }
+  else showToast('❌ ' + (j.error||'操作失败'), 'error');
+}
+
+async function cancelComm(id) {
+  if (!confirm('确认取消该佣金记录？\n（不计入结算）')) return;
+  const r = await fetch(API_BASE + '/users/commissions/' + id + '/cancel', { method: 'PATCH', credentials: 'include' });
+  const j = await r.json();
+  if (j.success) { showToast('✅ ' + j.message); loadCommissions(); }
+  else showToast('❌ ' + (j.error||'操作失败'), 'error');
+}
+
 function deleteUser(id, nickname) {
   if (!confirm('确定删除用户「' + (nickname || '#' + id) + '」？\n将同时删除其全部数据（用量/绑定/日志/阅读/测评/塔罗/留言），不可恢复！')) return;
   fetch('/api/users/' + id, { method: 'DELETE', credentials: 'include' })
@@ -573,6 +645,9 @@ async function init() {
     loadUsers();
     loadSettings();
     loadStats();
+    loadCommissions();
+    const _cf = document.getElementById('commStatusFilter');
+    if (_cf) _cf.onchange = loadCommissions;
 
   } catch (e) {
     document.getElementById('loadingState').style.display = 'none';

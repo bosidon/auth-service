@@ -292,14 +292,19 @@ router.get('/my-referrals', authenticateToken, async (req, res) => {
       return res.json({ success: false, error: '仅推广员可查看' });
     }
     const total = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ?', [uid])).c;
-    const vip = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND plan = ?', [uid, 'vip'])).c;
-    const sales = (await db.get('SELECT COUNT(*) c FROM users WHERE referred_by = ? AND role = ?', [uid, 'sales'])).c;
+    // 年卡购买人数（年卡 + 续费去重）/ 3 年卡购买人数
+    const yearlyCount = (await db.get(
+      "SELECT COUNT(DISTINCT referee_id) c FROM referral_commissions WHERE referrer_id = ? AND plan IN ('yearly','yearly_renew') AND status != 'cancelled'",
+      [uid])).c;
+    const lifetimeCount = (await db.get(
+      "SELECT COUNT(DISTINCT referee_id) c FROM referral_commissions WHERE referrer_id = ? AND plan = 'lifetime' AND status != 'cancelled'",
+      [uid])).c;
     // 佣金统计（60% 分成，阶段1记账制）
     const cPending = (await db.get("SELECT COALESCE(SUM(commission),0) s FROM referral_commissions WHERE referrer_id = ? AND status = 'pending'", [uid])).s;
     const cSettled = (await db.get("SELECT COALESCE(SUM(commission),0) s FROM referral_commissions WHERE referrer_id = ? AND status = 'settled'", [uid])).s;
     const cCount = (await db.get("SELECT COUNT(*) c FROM referral_commissions WHERE referrer_id = ? AND status != 'cancelled'", [uid])).c;
     res.json({ success: true, data: {
-      total, vip, sales,
+      total, yearlyCount, lifetimeCount,
       commissionPending: Math.round(cPending * 100) / 100,
       commissionSettled: Math.round(cSettled * 100) / 100,
       commissionCount: cCount,

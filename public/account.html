@@ -150,9 +150,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
       </div>
     </div>
     <div class="promo-stats">
-      <div class="promo-stat"><div class="promo-num" id="promoTotal">0</div><div class="promo-label">已邀请</div></div>
-      <div class="promo-stat"><div class="promo-num" id="promoVip">0</div><div class="promo-label">VIP 人数</div></div>
-      <div class="promo-stat"><div class="promo-num" id="promoSales">0</div><div class="promo-label">推广员人数</div></div>
+      <div class="promo-stat"><div class="promo-num" id="promoTotal">0</div><div class="promo-label">推荐人数</div></div>
+      <div class="promo-stat"><div class="promo-num" id="promoYearly">0</div><div class="promo-label">年卡购买</div></div>
+      <div class="promo-stat"><div class="promo-num" id="promoLifetime">0</div><div class="promo-label">3 年卡购买</div></div>
     </div>
     <div class="promo-commission">
       <div class="promo-comm-item">
@@ -206,8 +206,8 @@ function loadPromo(uid){
   apiGet('/auth/my-referrals').then(function(r){
     if(r&&r.success&&r.data){
       document.getElementById('promoTotal').textContent=r.data.total;
-      document.getElementById('promoVip').textContent=r.data.vip;
-      document.getElementById('promoSales').textContent=r.data.sales;
+      document.getElementById('promoYearly').textContent=r.data.yearlyCount;
+      document.getElementById('promoLifetime').textContent=r.data.lifetimeCount;
       var cp=document.getElementById('promoCommPending'), cs=document.getElementById('promoCommSettled');
       if(cp) cp.textContent=(r.data.commissionPending||0).toFixed(2);
       if(cs) cs.textContent=(r.data.commissionSettled||0).toFixed(2);

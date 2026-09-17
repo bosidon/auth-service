@@ -147,8 +147,8 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
     const userId = parseInt(req.params.id);
     const { plan } = req.body;
 
-    if (!plan || !['free', 'yearly', 'lifetime'].includes(plan)) {
-      return res.status(400).json({ success: false, error: '套餐无效，仅支持 free / yearly / lifetime' });
+    if (!plan || !['free', 'yearly', 'lifetime', 'partner'].includes(plan)) {
+      return res.status(400).json({ success: false, error: '套餐无效，仅支持 free / yearly / lifetime / partner' });
     }
 
     let expiresAt = null;
@@ -156,6 +156,8 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
       const d = new Date(); d.setFullYear(d.getFullYear() + 1); expiresAt = d.toISOString();
     } else if (plan === 'lifetime') {
       const d3 = new Date(); d3.setFullYear(d3.getFullYear() + 3); expiresAt = d3.toISOString();
+    } else if (plan === 'partner') {
+      const dp = new Date(); dp.setFullYear(dp.getFullYear() + 1); expiresAt = dp.toISOString();
     }
 
     const dbPlan = plan === 'free' ? 'free' : 'vip';
@@ -165,8 +167,13 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
       [dbPlan, expiresAt, userId]
     );
 
-    // 推广佣金：年卡 128 / 3年卡 256
-    if (plan !== 'free') {
+    // 加盟版：自动成为推广员（role=sales）
+    if (plan === 'partner') {
+      await db.run("UPDATE users SET role = 'sales' WHERE id = ? AND role != 'admin'", [userId]);
+    }
+
+    // 推广佣金：年卡 128 / 3年卡 256（加盟版 388 不抽佣）
+    if (plan === 'yearly' || plan === 'lifetime') {
       const amount = plan === 'lifetime' ? 256 : 128;
       await recordCommission(userId, plan, amount);
     }

@@ -422,6 +422,7 @@ function renderUsers(users) {
         '<option value="free" ' + (curPlan === 'free' ? 'selected' : '') + '>免费</option>' +
         '<option value="yearly" ' + (curPlan === 'yearly' ? 'selected' : '') + '>年卡</option>' +
         '<option value="lifetime" ' + (curPlan === 'lifetime' ? 'selected' : '') + '>3 年卡</option>' +
+        '<option value="partner" ' + (curPlan === 'partner' ? 'selected' : '') + '>加盟版 ¥388</option>' +
       '</select>';
     }
 
@@ -479,7 +480,7 @@ function renderUsers(users) {
     sel.addEventListener('change', function() {
       var userId = this.dataset.userId;
       var newPlan = this.value;
-      var labels = { 'free': '免费版', 'yearly': '年卡', 'lifetime': '3 年卡' };
+      var labels = { 'free': '免费版', 'yearly': '年卡', 'lifetime': '3 年卡', 'partner': '加盟版' };
       if (!confirm('确定将用户 #' + userId + ' 的套餐改为「' + (labels[newPlan] || newPlan) + '」？')) {
         this.value = this.dataset.originalPlan;
         return;

@@ -416,11 +416,12 @@ function renderUsers(users) {
     }
     let planSelect = '<span class="plan-badge ' + planClass + '">' + planLabel + '</span>';
     if (!isSelf) {
-      const curPlan = u.expires_at ? 'yearly' : (u.plan === 'vip' ? 'lifetime' : 'free');
+      const _expDays = u.expires_at ? (new Date(u.expires_at) - new Date()) / 86400000 : 0;
+    const curPlan = u.plan !== 'vip' ? 'free' : ((!u.expires_at || _expDays > 400) ? 'lifetime' : 'yearly');
       planSelect = '<select class="plan-select" data-user-id="' + u.id + '" data-original-plan="' + curPlan + '">' +
         '<option value="free" ' + (curPlan === 'free' ? 'selected' : '') + '>免费</option>' +
         '<option value="yearly" ' + (curPlan === 'yearly' ? 'selected' : '') + '>年卡</option>' +
-        '<option value="lifetime" ' + (curPlan === 'lifetime' ? 'selected' : '') + '>终身会员</option>' +
+        '<option value="lifetime" ' + (curPlan === 'lifetime' ? 'selected' : '') + '>3 年卡</option>' +
       '</select>';
     }
 
@@ -478,7 +479,7 @@ function renderUsers(users) {
     sel.addEventListener('change', function() {
       var userId = this.dataset.userId;
       var newPlan = this.value;
-      var labels = { 'free': '免费版', 'yearly': '年卡', 'lifetime': '终身会员' };
+      var labels = { 'free': '免费版', 'yearly': '年卡', 'lifetime': '3 年卡' };
       if (!confirm('确定将用户 #' + userId + ' 的套餐改为「' + (labels[newPlan] || newPlan) + '」？')) {
         this.value = this.dataset.originalPlan;
         return;

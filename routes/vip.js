@@ -20,7 +20,7 @@ router.get('/status', authenticateToken, async (req, res) => {
     if (user.plan === 'vip') {
       if (!user.expires_at) {
         isVip = true;
-        expiryLabel = '不限时';
+        expiryLabel = '长期有效';
       } else if (user.expires_at > now) {
         isVip = true;
         const days = Math.ceil((new Date(user.expires_at) - new Date(now)) / (1000 * 60 * 60 * 24));
@@ -62,8 +62,10 @@ router.post('/upgrade', authenticateToken, requireAdmin, async (req, res) => {
     let label = '';
 
     if (type === 'lifetime') {
-      expiresAt = null;
-      label = '不限时';
+      const d3 = new Date();
+      d3.setFullYear(d3.getFullYear() + 3);
+      expiresAt = d3.toISOString();
+      label = `3 年卡（至 ${d3.toLocaleDateString('zh-CN')}）`;
     } else {
       const d = new Date();
       d.setFullYear(d.getFullYear() + 1);
@@ -94,7 +96,7 @@ router.get('/plans', (req, res) => {
     success: true,
     data: {
       yearly: { price: 128, label: '年卡', duration: '365天' },
-      lifetime: { price: 256, label: '不限时', duration: '永久' },
+      lifetime: { price: 256, label: '3 年卡', duration: '1095天' },
       features: {
         tarot: '塔罗解读 · 无限次',
         maya: '玛雅天赋 · 无限次',

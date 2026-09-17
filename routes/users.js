@@ -154,6 +154,8 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
     let expiresAt = null;
     if (plan === 'yearly') {
       const d = new Date(); d.setFullYear(d.getFullYear() + 1); expiresAt = d.toISOString();
+    } else if (plan === 'lifetime') {
+      const d3 = new Date(); d3.setFullYear(d3.getFullYear() + 3); expiresAt = d3.toISOString();
     }
 
     const dbPlan = plan === 'free' ? 'free' : 'vip';
@@ -163,7 +165,7 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
       [dbPlan, expiresAt, userId]
     );
 
-    // 推广佣金（首次付费才记录）：年卡 128 / 永久 256
+    // 推广佣金：年卡 128 / 3年卡 256
     if (plan !== 'free') {
       const amount = plan === 'lifetime' ? 256 : 128;
       await recordCommission(userId, plan, amount);

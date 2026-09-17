@@ -73,14 +73,15 @@ async function applyReferral(req, newUserId) {
   }
 }
 
-/** 被推荐人付费 → 生成佣金记录（60%） */
+/** 被推荐人付费/续费 → 生成佣金记录（60%，每次付费都计） */
 async function recordCommission(refereeId, plan, amount) {
   try {
     const u = await db.get('SELECT referred_by FROM users WHERE id = ?', [refereeId]);
     if (!u || !u.referred_by) return null;
-    // 防重复：同一被推荐人只记一次佣金（首次付费）
+    // 每次付费都计佣（含续费）；仅过滤 2 分钟内的重复提交（防误触/重放）
     const existed = await db.get(
-      "SELECT id FROM referral_commissions WHERE referee_id = ? AND status != 'cancelled'", [refereeId]);
+      "SELECT id FROM referral_commissions WHERE referee_id = ? AND status != 'cancelled' AND created_at > datetime('now', '-2 minutes')",
+      [refereeId]);
     if (existed) return null;
     const commission = Math.round(Number(amount || 0) * COMMISSION_RATE * 100) / 100;
     if (commission <= 0) return null;

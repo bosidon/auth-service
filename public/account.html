@@ -131,7 +131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans SC','PingFang SC',s
         <div class="vip-plan free" id="vipPlan">免费版</div>
         <div class="vip-expires" id="vipExpires"></div>
       </div>
-      <a href="#" onclick="location.href=MAIN+'/vip.html';return false" class="btn btn-primary btn-sm" style="text-decoration:none">升级VIP</a>
+      <a href="#" id="vipActionBtn" onclick="location.href=MAIN+'/vip.html';return false" class="btn btn-primary btn-sm" style="text-decoration:none">升级VIP</a>
     </div>
   </div>
 
@@ -243,8 +243,9 @@ function loadData(){
     window._accPhone=u.phone||'';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
-    var _vp=document.getElementById('vipPlan'), _ve=document.getElementById('vipExpires');
+    var _vp=document.getElementById('vipPlan'), _ve=document.getElementById('vipExpires'), _vb=document.getElementById('vipActionBtn');
     if(u.plan&&u.plan!=='free'){
+      if(_vb)_vb.textContent='续费';
       _vp.textContent='VIP会员';
       _vp.className='vip-plan vip';
       if(u.expires_at){
@@ -256,6 +257,7 @@ updateAvatar(u.avatar_url,u.nickname||'?');
       }
     }else{
       _ve.textContent='暂未开通会员';
+      if(_vb)_vb.textContent='升级VIP';
     }
   });
 }

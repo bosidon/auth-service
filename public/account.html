@@ -243,10 +243,19 @@ function loadData(){
     window._accPhone=u.phone||'';
     document.getElementById('infoCreated').textContent=u.created_at?u.created_at.slice(0,10):'-';
 updateAvatar(u.avatar_url,u.nickname||'?');
+    var _vp=document.getElementById('vipPlan'), _ve=document.getElementById('vipExpires');
     if(u.plan&&u.plan!=='free'){
-      document.getElementById('vipPlan').textContent='VIP会员';
-      document.getElementById('vipPlan').className='vip-plan vip';
-      if(u.expires_at)document.getElementById('vipExpires').textContent='到期: '+u.expires_at.slice(0,10);
+      _vp.textContent='VIP会员';
+      _vp.className='vip-plan vip';
+      if(u.expires_at){
+        var _exp=new Date(u.expires_at);
+        var _days=Math.ceil((_exp-new Date())/86400000);
+        _ve.textContent='到期时间：'+u.expires_at.slice(0,10)+(_days>0?('（剩 '+_days+' 天）'):'（已过期）');
+      }else{
+        _ve.textContent='长期有效';
+      }
+    }else{
+      _ve.textContent='暂未开通会员';
     }
   });
 }

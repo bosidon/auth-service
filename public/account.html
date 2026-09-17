@@ -178,7 +178,7 @@ function loadPromo(uid){
   var card=document.getElementById('promoCard');
   if(!card) return;
   card.style.display='';
-  var link=MAIN+'/r/'+uid;
+  var link=MAIN+'/?ref='+uid;
   document.getElementById('promoLink').value=link;
   var box=document.getElementById('promoQrBox');
   if(window.QRCode && box){

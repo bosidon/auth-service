@@ -67,10 +67,8 @@ router.post('/upgrade', authenticateToken, requireAdmin, async (req, res) => {
       expiresAt = d3.toISOString();
       label = `3 年卡（至 ${d3.toLocaleDateString('zh-CN')}）`;
     } else if (type === 'partner') {
-      const dp = new Date();
-      dp.setFullYear(dp.getFullYear() + 1);
-      expiresAt = dp.toISOString();
-      label = `加盟版（至 ${dp.toLocaleDateString('zh-CN')}）`;
+      expiresAt = null;                 // 长期有效
+      label = '合伙人（长期有效）';
       await db.run("UPDATE users SET role = 'sales' WHERE id = ? AND role != 'admin'", [userId]);
     } else {
       const d = new Date();
@@ -103,7 +101,7 @@ router.get('/plans', (req, res) => {
     data: {
       yearly: { price: 128, label: '年卡', duration: '365天' },
       lifetime: { price: 256, label: '3 年卡', duration: '1095天' },
-      partner: { price: 388, label: '加盟版', duration: '365天' },
+      partner: { price: 388, label: '合伙人', duration: '长期有效' },
       features: {
         tarot: '塔罗解读 · 无限次',
         maya: '玛雅天赋 · 无限次',

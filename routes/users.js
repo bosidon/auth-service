@@ -157,7 +157,7 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
     } else if (plan === 'lifetime') {
       const d3 = new Date(); d3.setFullYear(d3.getFullYear() + 3); expiresAt = d3.toISOString();
     } else if (plan === 'partner') {
-      const dp = new Date(); dp.setFullYear(dp.getFullYear() + 1); expiresAt = dp.toISOString();
+      expiresAt = null;                 // 合伙人：长期有效
     }
 
     const dbPlan = plan === 'free' ? 'free' : 'vip';
@@ -167,12 +167,12 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
       [dbPlan, expiresAt, userId]
     );
 
-    // 加盟版：自动成为推广员（role=sales）
+    // 合伙人：自动成为推广员（role=sales）
     if (plan === 'partner') {
       await db.run("UPDATE users SET role = 'sales' WHERE id = ? AND role != 'admin'", [userId]);
     }
 
-    // 推广佣金：年卡 128 / 3年卡 256（加盟版 388 不抽佣）
+    // 推广佣金：年卡 128 / 3年卡 256（合伙人 388 不抽佣）
     if (plan === 'yearly' || plan === 'lifetime') {
       const amount = plan === 'lifetime' ? 256 : 128;
       await recordCommission(userId, plan, amount);

@@ -47,7 +47,6 @@ router.get('/', authenticateToken, async (req, res) => {
     usageRows.forEach(r => { usageMap[r.service] = r.used; });
 
     const limits = await getFreeLimits();
-    const limitsA = await getFreeLimits();
     const services = ['tarot', 'maya', 'psych_test', 'reading'];
     const result = services.map(s => {
       const used = usageMap[s] || 0;
@@ -189,7 +188,6 @@ router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
     usageRows.forEach(r => { usageMap[r.service] = r.used; });
 
     const limits = await getFreeLimits();
-    const limitsA = await getFreeLimits();
     const services = ['tarot', 'maya', 'psych_test', 'reading'];
     const result = services.map(s => {
       const used = usageMap[s] || 0;

@@ -55,16 +55,6 @@ async function applyReferral(req, newUserId) {
     const expRef = await grantVipDays(rep.id, REWARD_DAYS);
     const expNew = await grantVipDays(newUserId, REWARD_DAYS);
 
-    // 3) 记录奖励流水
-    try {
-      await db.run(
-        "INSERT INTO referral_rewards (referrer_id, referee_id, event, side, reward_type, reward_days) VALUES (?,?,'register','referrer','vip_days',?)",
-        [rep.id, newUserId, REWARD_DAYS]);
-      await db.run(
-        "INSERT INTO referral_rewards (referrer_id, referee_id, event, side, reward_type, reward_days) VALUES (?,?,'register','referee','vip_days',?)",
-        [rep.id, newUserId, REWARD_DAYS]);
-    } catch (e) { console.error('reward log error:', e.message); }
-
     console.log('  referral: user #' + newUserId + ' <- #' + rep.id + ' (+' + REWARD_DAYS + 'd both)');
     return rep.id;
   } catch (e) {

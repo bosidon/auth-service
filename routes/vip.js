@@ -67,9 +67,11 @@ router.post('/upgrade', authenticateToken, requireAdmin, async (req, res) => {
       expiresAt = d3.toISOString();
       label = `3 年卡（至 ${d3.toLocaleDateString('zh-CN')}）`;
     } else if (type === 'partner') {
-      expiresAt = null;                 // 长期有效
-      label = '合伙人（长期有效）';
-      await db.run("UPDATE users SET role = 'sales' WHERE id = ? AND role != 'admin'", [userId]);
+      const dp = new Date();
+      dp.setFullYear(dp.getFullYear() + 1);
+      expiresAt = dp.toISOString();      // VIP 1 年
+      label = `合伙人（至 ${dp.toLocaleDateString('zh-CN')}）`;
+      await db.run("UPDATE users SET role = 'sales' WHERE id = ? AND role != 'admin'", [userId]);   // 推广员资格长期有效
     } else {
       const d = new Date();
       d.setFullYear(d.getFullYear() + 1);
@@ -101,7 +103,7 @@ router.get('/plans', (req, res) => {
     data: {
       yearly: { price: 128, label: '年卡', duration: '365天' },
       lifetime: { price: 256, label: '3 年卡', duration: '1095天' },
-      partner: { price: 388, label: '合伙人', duration: '长期有效' },
+      partner: { price: 388, label: '合伙人', duration: '365天' },
       features: {
         tarot: '塔罗解读 · 无限次',
         maya: '玛雅天赋 · 无限次',

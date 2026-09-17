@@ -157,7 +157,7 @@ router.patch('/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
     } else if (plan === 'lifetime') {
       const d3 = new Date(); d3.setFullYear(d3.getFullYear() + 3); expiresAt = d3.toISOString();
     } else if (plan === 'partner') {
-      expiresAt = null;                 // 合伙人：长期有效
+      const dp = new Date(); dp.setFullYear(dp.getFullYear() + 1); expiresAt = dp.toISOString();   // VIP 1 年
     }
 
     const dbPlan = plan === 'free' ? 'free' : 'vip';

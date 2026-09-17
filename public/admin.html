@@ -285,6 +285,9 @@ tr:hover td { background: #1a1a26; }
   <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
     <span style="color:#94a3b8;font-size:13px;">待结算 <b id="commPendingTotal" style="color:#fbbf24;">¥0.00</b></span>
     <span style="color:#94a3b8;font-size:13px;">已结算 <b id="commSettledTotal" style="color:#34d399;">¥0.00</b></span>
+    <select id="commReferrerFilter" class="role-select" style="max-width:180px;">
+      <option value="">全部推荐人</option>
+    </select>
     <select id="commStatusFilter" class="role-select">
       <option value="pending">待结算</option>
       <option value="settled">已结算</option>
@@ -292,6 +295,7 @@ tr:hover td { background: #1a1a26; }
       <option value="all">全部</option>
     </select>
     <button class="btn-outline" onclick="loadCommissions()">刷新</button>
+    <button class="btn" onclick="settleAll()" style="background:#059669;">全部结算</button>
   </div>
 </div>
 <div class="table-wrap">
@@ -301,6 +305,21 @@ tr:hover td { background: #1a1a26; }
     </thead>
     <tbody id="commTbody"><tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">加载中…</td></tr></tbody>
   </table>
+</div>
+
+<!-- 结算确认弹窗 -->
+<div id="settleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:3000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSettleModal()">
+  <div style="background:#14141e;border:1px solid #1e1e2a;border-radius:16px;padding:26px;width:420px;max-width:92vw;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:16px;font-weight:600;color:#e0e0e0;" id="settleTitle">确认结算</span>
+      <span onclick="closeSettleModal()" style="cursor:pointer;color:#64748b;font-size:18px;">&#10005;</span>
+    </div>
+    <div id="settleBody" style="color:#cbd5e1;font-size:14px;line-height:1.9;margin-bottom:22px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn-outline" onclick="closeSettleModal()">取消</button>
+      <button class="btn" id="settleOkBtn" style="background:#059669;">确认已结算</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -483,10 +502,46 @@ async function updateField(userId, field, value, selectEl, originalAttr) {
 
 
 // ===== 推广佣金 =====
+let _commRows = [];
+let _commReferrerFilter = '';   // 推荐人筛选状态（不依赖 DOM，避免重建丢失）
+let _commReferrerNames = {};     // 推荐人 id -> 名称（用于显示结算范围）
+
+function openSettleModal(title, html, onOk) {
+  document.getElementById('settleTitle').textContent = title;
+  document.getElementById('settleBody').innerHTML = html;
+  const m = document.getElementById('settleModal');
+  m.style.display = 'flex';
+  const btn = document.getElementById('settleOkBtn');
+  btn.onclick = async function() {
+    btn.disabled = true; btn.textContent = '处理中…';
+    try { await onOk(); } finally { btn.disabled = false; btn.textContent = '确认已结算'; closeSettleModal(); }
+  };
+}
+function closeSettleModal() { document.getElementById('settleModal').style.display = 'none'; }
+
+async function loadCommReferrers() {
+  try {
+    const r = await fetch(API_BASE + '/users/commissions/referrers', { credentials: 'include' });
+    const j = await r.json();
+    const sel = document.getElementById('commReferrerFilter');
+    if (!sel || !j.success) return;
+    _commReferrerNames = {};
+    j.data.forEach(x => { _commReferrerNames[String(x.referrer_id)] = x.nickname || ('#' + x.referrer_id); });
+    const cur = String(_commReferrerFilter || '');
+    sel.innerHTML = '<option value=""' + (cur === '' ? ' selected' : '') + '>全部推荐人</option>' +
+      j.data.map(x => '<option value="' + x.referrer_id + '"' +
+        (String(x.referrer_id) === cur ? ' selected' : '') + '>' +
+        (x.nickname || ('#' + x.referrer_id)) +
+        '（' + x.cnt + ' 条 / 待结 ¥' + Number(x.pending || 0).toFixed(2) + '）</option>').join('');
+    sel.value = cur;   // 双保险
+  } catch (e) { console.error(e); }
+}
+
 async function loadCommissions() {
   const st = (document.getElementById('commStatusFilter') || {}).value || 'pending';
+  const rf = _commReferrerFilter;
   try {
-    const r = await fetch(API_BASE + '/users/commissions/list?status=' + st, { credentials: 'include' });
+    const r = await fetch(API_BASE + '/users/commissions/list?status=' + st + (rf ? '&referrer_id=' + rf : ''), { credentials: 'include' });
     const j = await r.json();
     const tb = document.getElementById('commTbody');
     if (!tb) return;
@@ -494,6 +549,7 @@ async function loadCommissions() {
     const t = j.totals || {};
     document.getElementById('commPendingTotal').textContent = '¥' + ((t.pending||0)).toFixed(2);
     document.getElementById('commSettledTotal').textContent = '¥' + ((t.settled||0)).toFixed(2);
+    _commRows = j.data;
     if (!j.data.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">📭 暂无佣金记录</td></tr>'; return; }
     const stMap = { pending: '待结算', settled: '已结算', cancelled: '已取消' };
     const stColor = { pending: '#fbbf24', settled: '#34d399', cancelled: '#888' };
@@ -515,11 +571,54 @@ async function loadCommissions() {
 }
 
 async function settleComm(id) {
-  if (!confirm('确认已向推荐人完成转账？\n（将标记为「已结算」）')) return;
-  const r = await fetch(API_BASE + '/users/commissions/' + id + '/settle', { method: 'PATCH', credentials: 'include' });
-  const j = await r.json();
-  if (j.success) { showToast('✅ ' + j.message); loadCommissions(); }
-  else showToast('❌ ' + (j.error||'操作失败'), 'error');
+  const c = _commRows.find(x => String(x.id) === String(id));
+  if (!c) return;
+  openSettleModal('确认结算佣金',
+    '推荐人：<b style="color:#c4b5fd;">' + (c.referrer_name || ('#' + c.referrer_id)) + '</b><br>' +
+    '被推荐人：' + (c.referee_name || ('#' + c.referee_id)) + '<br>' +
+    '套餐：' + (c.plan || '-') + '（订单 ¥' + Number(c.order_amount || 0).toFixed(2) + '）<br>' +
+    '佣金（60%）：<b style="color:#a78bfa;font-size:16px;">¥' + Number(c.commission || 0).toFixed(2) + '</b><br>' +
+    '<span style="font-size:12px;color:#94a3b8;">请先通过微信完成转账，再点击确认</span>',
+    async () => {
+      const r = await fetch(API_BASE + '/users/commissions/' + id + '/settle', { method: 'PATCH', credentials: 'include' });
+      const j = await r.json();
+      if (j.success) { showToast('✅ ' + j.message); loadCommissions(); loadCommReferrers(); }
+      else showToast('❌ ' + (j.error || '操作失败'), 'error');
+    });
+}
+
+async function settleAll() {
+  const rf = _commReferrerFilter;
+  const scopeName = rf ? (_commReferrerNames[String(rf)] || ('#' + rf)) : '全部推荐人';
+  try {
+    const r = await fetch(API_BASE + '/users/commissions/list?status=pending' + (rf ? '&referrer_id=' + rf : ''), { credentials: 'include' });
+    const j = await r.json();
+    if (!j.success || !j.data.length) { showToast('没有待结算的佣金', 'error'); return; }
+    const rows = j.data;
+    const sum = rows.reduce((a, x) => a + Number(x.commission || 0), 0);
+    const byRef = {};
+    rows.forEach(x => {
+      const k = x.referrer_name || ('#' + x.referrer_id);
+      byRef[k] = (byRef[k] || 0) + Number(x.commission || 0);
+    });
+    const list = Object.keys(byRef).map(k =>
+      '<div style="display:flex;justify-content:space-between;font-size:13px;color:#cbd5e1;">' +
+      '<span>' + k + '</span><span style="color:#a78bfa;">¥' + byRef[k].toFixed(2) + '</span></div>').join('');
+    openSettleModal('确认全部结算 · ' + scopeName,
+      '待结算 <b>' + rows.length + '</b> 条，合计 <b style="color:#fbbf24;font-size:16px;">¥' + sum.toFixed(2) + '</b>' +
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);">' + list + '</div>' +
+      '<div style="font-size:12px;color:#94a3b8;margin-top:10px;">请先完成全部转账，再点击确认</div>',
+      async () => {
+        const rr = await fetch(API_BASE + '/users/commissions/settle-all', {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(rf ? { referrer_id: parseInt(rf) } : {})
+        });
+        const jj = await rr.json();
+        if (jj.success) { showToast('✅ ' + jj.message); loadCommissions(); loadCommReferrers(); }
+        else showToast('❌ ' + (jj.error || '操作失败'), 'error');
+      });
+  } catch (e) { showToast('❌ ' + e.message, 'error'); }
 }
 
 async function cancelComm(id) {
@@ -646,8 +745,11 @@ async function init() {
     loadSettings();
     loadStats();
     loadCommissions();
+    loadCommReferrers();
     const _cf = document.getElementById('commStatusFilter');
     if (_cf) _cf.onchange = loadCommissions;
+    const _rf = document.getElementById('commReferrerFilter');
+    if (_rf) _rf.onchange = function() { _commReferrerFilter = this.value || ''; loadCommissions(); };
 
   } catch (e) {
     document.getElementById('loadingState').style.display = 'none';

@@ -251,9 +251,11 @@ async function deleteUserSiteData(userId) {
 router.get('/commissions/list', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const status = req.query.status || 'all';
+    const referrerId = req.query.referrer_id ? parseInt(req.query.referrer_id) : null;
     let where = 'WHERE 1=1';
     const params = [];
     if (status !== 'all') { where += ' AND c.status = ?'; params.push(status); }
+    if (referrerId) { where += ' AND c.referrer_id = ?'; params.push(referrerId); }
     const rows = await db.query(
       'SELECT c.*, ur.nickname AS referrer_name, ur.email AS referrer_email, ' +
       'ue.nickname AS referee_name, ue.email AS referee_email ' +
@@ -263,15 +265,41 @@ router.get('/commissions/list', authenticateToken, requireAdmin, async (req, res
       ' ORDER BY c.id DESC LIMIT 300',
       params
     );
+    const tw = referrerId ? ' AND referrer_id = ' + referrerId : '';
     const t = await db.get(
       "SELECT COALESCE(SUM(CASE WHEN status='pending' THEN commission ELSE 0 END),0) pending, " +
       "COALESCE(SUM(CASE WHEN status='settled' THEN commission ELSE 0 END),0) settled, " +
-      "COUNT(*) total FROM referral_commissions WHERE status != 'cancelled'"
+      "COUNT(*) total FROM referral_commissions WHERE status != 'cancelled'" + tw
     );
     res.json({ success: true, data: rows, totals: t });
   } catch (e) {
     res.json({ success: false, error: e.message });
   }
+});
+
+// 推荐人列表（有佣金记录的推广员 + 待结算金额）
+router.get('/commissions/referrers', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const rows = await db.query(
+      'SELECT c.referrer_id, u.nickname, u.email, u.role, ' +
+      "COUNT(*) cnt, COALESCE(SUM(CASE WHEN c.status='pending' THEN c.commission ELSE 0 END),0) pending " +
+      'FROM referral_commissions c LEFT JOIN users u ON c.referrer_id = u.id ' +
+      "WHERE c.status != 'cancelled' GROUP BY c.referrer_id ORDER BY pending DESC, cnt DESC"
+    );
+    res.json({ success: true, data: rows });
+  } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+// 批量结算（可按推荐人）
+router.patch('/commissions/settle-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const referrerId = req.body && req.body.referrer_id ? parseInt(req.body.referrer_id) : null;
+    let sql = "UPDATE referral_commissions SET status = 'settled', settled_at = datetime('now') WHERE status = 'pending'";
+    const params = [];
+    if (referrerId) { sql += ' AND referrer_id = ?'; params.push(referrerId); }
+    const r = await db.run(sql, params);
+    res.json({ success: true, message: '已结算 ' + (r.changes || 0) + ' 条', changes: r.changes || 0 });
+  } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 router.patch('/commissions/:id/settle', authenticateToken, requireAdmin, async (req, res) => {
